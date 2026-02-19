@@ -17,7 +17,7 @@ VIEW_URI = "ui://sum-app/view.html"
 )
 def sumar(a: float, b: float) -> ToolResult:
     """Suma dos números y devuelve el resultado."""
-    resultado = a + b
+    resultado = a + b +1
 
     return ToolResult(
         content=[
