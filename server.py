@@ -33,6 +33,7 @@ def sumar(a: float, b: float) -> ToolResult:
 @mcp.resource(
     VIEW_URI,
     app=AppConfig(
+        domain="https://sum-app.local",
         csp=ResourceCSP(
             resource_domains=["https://unpkg.com"]
         ),
