@@ -5,7 +5,8 @@ from mcp import types
 
 mcp = FastMCP("Catalog App Server")
 
-FRONTEND_ORIGIN = "https://mcp-front-test-arfbbch0f8hkgqex.canadacentral-01.azurewebsites.net"
+#FRONTEND_ORIGIN = "https://mcp-front-test-arfbbch0f8hkgqex.canadacentral-01.azurewebsites.net"
+FRONTEND_ORIGIN = "https://poc-back-ai-front.netlify.app"
 VIEW_URI = "ui://catalog/view.html"
 
 @mcp.tool(app=AppConfig(resource_uri=VIEW_URI, prefers_border=True))
