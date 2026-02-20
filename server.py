@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from fastmcp import FastMCP
 from fastmcp.server.apps import AppConfig, ResourceCSP
 from fastmcp.tools import ToolResult
@@ -7,64 +5,42 @@ from mcp import types
 
 mcp = FastMCP("Catalog App Server")
 
-UI_DIR = Path("ui")
-BASE_URI = "ui://sum-app"
-VIEW_URI = f"{BASE_URI}/index.html"
+FRONTEND_ORIGIN = "https://mcp-front-test-arfbbch0f8hkgqex.canadacentral-01.azurewebsites.net"
+VIEW_URI = "ui://catalog/view.html"
 
-# Config compartida para UI (puedes ajustar CSP si lo necesitas)
-UI_APP_CONFIG = AppConfig(
-    domain="https://sum-app.local",
-    # Si NO usas CDN (unpkg) ya no lo necesitas.
-    # Déjalo vacío o quítalo por completo.
-    csp=ResourceCSP(
-        resource_domains=["https://unpkg.com"]
-    ),
-    prefers_border=True
-)
-
-# TOOL PRINCIPAL: esto es lo que "abre" la UI dentro de ChatGPT
 @mcp.tool(app=AppConfig(resource_uri=VIEW_URI, prefers_border=True))
-def open_catalog() -> ToolResult:
-    return ToolResult(
-        content=[
-            types.TextContent(type="text", text="Mostrando catálogo embebido…")
-        ]
-    )
+def open_ui() -> ToolResult:
+    return ToolResult(content=[types.TextContent(type="text", text="Abriendo UI…")])
 
-# 1) RECURSO: index.html (producto del build)
-@mcp.resource(VIEW_URI, app=UI_APP_CONFIG)
+@mcp.resource(
+    VIEW_URI,
+    app=AppConfig(
+        csp=ResourceCSP(
+            # por si tu HTML del "wrapper" carga imágenes/css/etc (normalmente no mucho)
+            resource_domains=[FRONTEND_ORIGIN],
+            # CLAVE: permitir iframes anidados
+            frame_domains=[FRONTEND_ORIGIN],
+            # solo si dentro del wrapper haces fetch (no necesario en este wrapper)
+            # connect_domains=[FRONTEND_ORIGIN],
+        ),
+        prefers_border=True,
+    ),
+)
 def view() -> str:
-    html = (UI_DIR / "index.html").read_text(encoding="utf-8")
-
-    # Para que <img src="tarjetas_ntt-01.png"> resuelva a ui://sum-app/tarjetas_ntt-01.png
-    if "<base" not in html:
-        html = html.replace("<head>", f'<head><base href="{BASE_URI}/">', 1)
-
-    return html
-
-# 2) RECURSOS: imágenes (como son pocas, explícitas es lo más simple y robusto)
-def _png(name: str) -> bytes:
-    return (UI_DIR / name).read_bytes()
-
-@mcp.resource(f"{BASE_URI}/tarjetas_ntt-01.png", app=UI_APP_CONFIG)
-def img_01() -> bytes: return _png("tarjetas_ntt-01.png")
-
-@mcp.resource(f"{BASE_URI}/tarjetas_ntt-02.png", app=UI_APP_CONFIG)
-def img_02() -> bytes: return _png("tarjetas_ntt-02.png")
-
-@mcp.resource(f"{BASE_URI}/tarjetas_ntt-03.png", app=UI_APP_CONFIG)
-def img_03() -> bytes: return _png("tarjetas_ntt-03.png")
-
-@mcp.resource(f"{BASE_URI}/tarjetas_ntt-04.png", app=UI_APP_CONFIG)
-def img_04() -> bytes: return _png("tarjetas_ntt-04.png")
-
-@mcp.resource(f"{BASE_URI}/tarjetas_ntt-05.png", app=UI_APP_CONFIG)
-def img_05() -> bytes: return _png("tarjetas_ntt-05.png")
-
-# SVG
-@mcp.resource(f"{BASE_URI}/vite.svg", app=UI_APP_CONFIG)
-def vite_svg() -> bytes:
-    return (UI_DIR / "vite.svg").read_bytes()
+    return f"""<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      html, body {{ height: 100%; margin: 0; }}
+      iframe {{ width: 100%; height: 100%; border: 0; }}
+    </style>
+  </head>
+  <body>
+    <iframe src="{FRONTEND_ORIGIN}/" allow="clipboard-read; clipboard-write"></iframe>
+  </body>
+</html>"""
 
 if __name__ == "__main__":
     mcp.run()
