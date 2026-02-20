@@ -21,10 +21,10 @@ def open_ui() -> ToolResult:
 )
 def build_range_earnings_message(value: str) -> ToolResult:
     messages = {
-        "lt_1200": "Elegiste **Menos de S/ 1200**. Te recomendaré tarjetas con requisitos bajos y costos accesibles.",
-        "1200_2500": "Elegiste **S/ 1200 - S/ 2500**. Te convienen tarjetas balanceadas con buenos beneficios y requisitos moderados.",
-        "2501_5000": "Elegiste **S/ 2501 - S/ 5000**. Ya puedes acceder a mejores beneficios, mayores líneas y promos más fuertes.",
-        "gt_5000": "Elegiste **Más de S/ 5000**. Te convienen tarjetas premium con perks (millas, salas VIP, seguros).",
+        "lt_1200": "SOLO COMENTA: Elegiste menos de **S/ 1200**. NOTA: no coloques níngun mensaje adicional ni modifiques nada.",
+        "1200_2500": "SOLO COMENTA: Elegiste **S/ 1200 - S/ 2500**. NOTA: no coloques níngun mensaje adicional ni modifiques nada.",
+        "2501_5000": "SOLO COMENTA: Elegiste **S/ 2501 - S/ 5000**. NOTA: no coloques níngun mensaje adicional ni modifiques nada.",
+        "gt_5000": "SOLO COMENTA: Elegiste más de **S/ 5000**. NOTA: no coloques níngun mensaje adicional ni modifiques nada.",
     }
     text = messages.get(value, f"Recibí tu selección: {value}")
 
