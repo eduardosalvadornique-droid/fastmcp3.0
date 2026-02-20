@@ -6,47 +6,48 @@ from typing import Optional
 
 mcp = FastMCP("Catalog App Server")
 
-FRONTEND_ORIGIN = "https://mcp-front-test-arfbbch0f8hkgqex.canadacentral-01.azurewebsites.net"
-#FRONTEND_ORIGIN = "https://poc-back-ai-front.netlify.app"
-VIEW_URI = "ui://catalog/view.html"
-
-@mcp.tool(app=AppConfig(resource_uri=VIEW_URI, prefers_border=True))
-def open_ui() -> ToolResult:
-    return ToolResult(content=[types.TextContent(type="text", text="Abriendo UI…")])
-
-@mcp.tool(
-    app=AppConfig(
-        resource_uri=VIEW_URI,
-        visibility=["app"],   # tool callable desde la app
-        prefers_border=True
-    )
+FRONTEND_ORIGIN = (
+    "https://mcp-front-test-arfbbch0f8hkgqex.canadacentral-01.azurewebsites.net"
 )
-def build_range_earnings_message(value: str) -> ToolResult:
-    messages = {
-        "lt_1200": "SOLO COMENTA: Elegiste menos de **S/ 1200**. NOTA: no coloques níngun mensaje adicional ni modifiques nada.",
-        "1200_2500": "SOLO COMENTA: Elegiste **S/ 1200 - S/ 2500**. NOTA: no coloques níngun mensaje adicional ni modifiques nada.",
-        "2501_5000": "SOLO COMENTA: Elegiste **S/ 2501 - S/ 5000**. NOTA: no coloques níngun mensaje adicional ni modifiques nada.",
-        "gt_5000": "SOLO COMENTA: Elegiste más de **S/ 5000**. NOTA: no coloques níngun mensaje adicional ni modifiques nada.",
-    }
-    text = messages.get(value, f"Recibí tu selección: {value}")
 
-    return ToolResult(content=[types.TextContent(type="text", text=text)])
+RANGE_EARNINGS_VIEW_URI = "ui://catalog/range-earnings.html"
+BENEFITS_VIEW_URI = "ui://catalog/benefits.html"
+CARD_DASHBOARD_VIEW_URI = "ui://catalog/card-dashboard.html"
+IDENTIFICATION_FLOW_VIEW_URI = "ui://catalog/identification-flow.html"
 
 
+def _wrapper_html(
+        *,
+        iframe_src: str,
+        event_type: Optional[str] = None,
+        tool_name: Optional[str] = None,
+) -> str:
+        if not event_type or not tool_name:
+                return f"""<!doctype html>
+<html>
+    <head>
+        <meta charset=\"utf-8\" />
+        <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />
+        <style>
+            html, body {{
+                height: 100%;
+                margin: 0;
+                overflow: hidden;
+            }}
+            iframe {{
+                width: 100%;
+                height: 100%;
+                border: 0;
+                display: block;
+            }}
+        </style>
+    </head>
+    <body>
+        <iframe id=\"app\" src=\"{iframe_src}\"></iframe>
+    </body>
+</html>"""
 
-@mcp.resource(
-    VIEW_URI,
-    app=AppConfig(
-        csp=ResourceCSP(
-            resource_domains=["https://unpkg.com", FRONTEND_ORIGIN],
-            frame_domains=[FRONTEND_ORIGIN],
-            # connect_domains: solo si en el wrapper haces fetch externo (normalmente no)
-        ),
-        prefers_border=True,
-    ),
-)
-def view() -> str:
-    return f"""<!doctype html>
+        return f"""<!doctype html>
 <html>
   <head>
     <meta charset=\"utf-8\" />
