@@ -82,6 +82,19 @@ def _wrapper_html(
         if (ev.source !== iframe.contentWindow) return;
 
         const data = ev.data || {{}};
+        
+        if (data.type === "open_link" && typeof data.url === "string") {{
+          const result = await app.openLink({{ url: data.url }});
+
+          // si el host lo bloquea, manda fallback al chat
+          if (result?.isError) {{
+            await app.sendMessage({{
+              role: "user",
+              content: [{{ type: "text", text: `No pude abrir el link automáticamente. Aquí está: ${{data.url}}` }}],
+            }});
+          }}
+        }}
+
         if (data.type !== "{event_type}") return;
 
         const value = data.value;
