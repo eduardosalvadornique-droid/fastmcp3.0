@@ -80,24 +80,12 @@ def _wrapper_html(
 
       window.addEventListener("message", async (ev) => {{
         const data = ev.data || {{}};
-        await app.sendMessage({{
-          role: "user",
-          content: [{{ type: "text", text: `SOLO COMENTA: DEBUG event type=${{data.type}} origin=${{ev.origin}}. NOTA: no coloques níngun mensaje adicional ni modifiques nada.` }}],
-        }});
-        return;
+
         if (ev.source !== iframe.contentWindow) return;
 
 
         if (data.type === "open_link" && typeof data.url === "string") {{
-          const result = await app.openLink({{ url: data.url }});
-
-          // si el host lo bloquea, manda fallback al chat
-          if (result?.isError) {{
-            await app.sendMessage({{
-              role: "user",
-              content: [{{ type: "text", text: `No pude abrir el link automáticamente. Aquí está: ${{data.url}}` }}],
-            }});
-          }}
+          await app.openLink({{ url: data.url }});
         }}
 
         if (data.type !== "{event_type}") return;
