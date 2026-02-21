@@ -106,20 +106,20 @@ def _wrapper_html(
         const nextToolName = structured?.next_tool_name;
         const nextToolArguments = structured?.next_tool_arguments;
 
-        await app.sendMessage({{
-          role: "user",
-          content: [{{ type: "text", text }}]
-        }});
+        let composedText = text;
         if (typeof nextToolName === "string" && nextToolName.length > 0) {{
           const argsJson = JSON.stringify(nextToolArguments ?? {{}});
-          await app.sendMessage({{
-            role: "user",
-            content: [{{
-              type: "text",
-              text: `SOLO EJECUTA la herramienta ${{nextToolName}} con argumentos ${{argsJson}}. No agregues texto adicional.`
-            }}]
-          }});
+          composedText = `INSTRUCCION OBLIGATORIA:
+            1) Responde EXACTAMENTE este texto al usuario, sin cambios:
+            "${{text}}"
+            2) Luego ejecuta la herramienta "${{nextToolName}}" con argumentos ${{argsJson}}.
+            3) No agregues nada mas.`;
         }}
+
+        await app.sendMessage({{
+          role: "user",
+          content: [{{ type: "text", text: composedText }}]
+        }});
       }});
     </script>
   </body>
