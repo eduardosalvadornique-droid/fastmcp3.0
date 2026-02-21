@@ -84,6 +84,7 @@ def _wrapper_html(
           role: "user",
           content: [{{ type: "text", text: `DEBUG event type=${{data.type}} origin=${{ev.origin}}` }}],
         }});
+        return;
         if (ev.source !== iframe.contentWindow) return;
 
 
