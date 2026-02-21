@@ -17,42 +17,55 @@ IDENTIFICATION_FLOW_VIEW_URI = "ui://catalog/identification-flow.html"
 
 
 def _wrapper_html(
-        *,
-        iframe_src: str,
-        event_type: Optional[str] = None,
-        tool_name: Optional[str] = None,
+    *,
+    iframe_src: str,
+    event_type: Optional[str] = None,
+    tool_name: Optional[str] = None,
 ) -> str:
-        
-        return f"""<!doctype html>
+    """
+    Wrapper que:
+    - Embebe tu frontend en un iframe
+    - Soporta open_link (desde el iframe -> host) usando app.openLink
+    - (Opcional) puentea eventos (event_type + tool_name) para llamar tools del server
+    """
+    # Para evitar que "{event_type}" quede como "None" string en JS:
+    event_type_js = event_type or ""
+    tool_name_js = tool_name or ""
+
+    return f"""<!doctype html>
 <html>
   <head>
-    <meta charset=\"utf-8\" />
-    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <style>
       html, body {{
         margin: 0;
         padding: 0;
         width: 100%;
-        height: 100vh;
+        height: 100%;
         overflow: hidden;
+        background: transparent;
       }}
-      body {{
-        display: flex;
-      }}
+
+      /* Clave: saca el iframe del flujo y ocúpalo todo */
       iframe {{
-        flex: 1 1 auto;
-        width: 100%;
+        position: fixed;
+        inset: 0;
+        width: 100vw;
         height: 100vh;
-        min-height: 720px;
         border: 0;
         display: block;
       }}
     </style>
   </head>
   <body>
-    <iframe id=\"app\" src=\"{iframe_src}\"></iframe>
+    <iframe
+      id="app"
+      src="{iframe_src}"
+      allow="clipboard-read; clipboard-write; fullscreen"
+    ></iframe>
 
-    <script type=\"module\">
+    <script type="module">
       import {{ App }} from "https://unpkg.com/@modelcontextprotocol/ext-apps@0.4.0/app-with-deps";
 
       const app = new App({{ name: "Catalog UI Wrapper", version: "1.0.0" }});
@@ -64,9 +77,18 @@ def _wrapper_html(
       window.addEventListener("message", async (ev) => {{
         const data = ev.data || {{}};
 
+        // 1) ABRIR LINKS: siempre disponible, no depende de event_type/tool_name
         if (data.type === "open_link" && typeof data.url === "string") {{
-          const result = await app.openLink({{ url: data.url }});
-          if (result?.isError) {{
+          try {{
+            const result = await app.openLink({{ url: data.url }});
+            if (result?.isError) {{
+              await app.sendMessage({{
+                role: "user",
+                content: [{{ type: "text", text: `No pude abrir el link automáticamente. Aquí está: ${{data.url}}` }}],
+              }});
+            }}
+          }} catch (e) {{
+            // Si openLink lanza excepción, igual hacemos fallback
             await app.sendMessage({{
               role: "user",
               content: [{{ type: "text", text: `No pude abrir el link automáticamente. Aquí está: ${{data.url}}` }}],
@@ -75,9 +97,15 @@ def _wrapper_html(
           return;
         }}
 
+        // 2) Desde aquí, solo eventos que vengan del iframe principal
         if (ev.source !== iframe.contentWindow) return;
 
-        if (data.type !== "{event_type}") return;
+        // 3) Si no hay puente configurado, no hacemos nada más
+        const EVENT_TYPE = "{event_type_js}";
+        const TOOL_NAME  = "{tool_name_js}";
+        if (!EVENT_TYPE || !TOOL_NAME) return;
+
+        if (data.type !== EVENT_TYPE) return;
 
         const value = data.value;
 
@@ -86,11 +114,12 @@ def _wrapper_html(
         lastSentAt = now;
 
         const toolResult = await app.callServerTool({{
-          name: "{tool_name}",
+          name: TOOL_NAME,
           arguments: {{ value }}
         }});
 
-        const text = toolResult?.content?.find(c => c.type === "text")?.text
+        const text =
+          toolResult?.content?.find(c => c.type === "text")?.text
           ?? `Selección: ${{value}}`;
 
         await app.sendMessage({{
@@ -103,6 +132,7 @@ def _wrapper_html(
 </html>"""
 
 
+# CSP y presentación de recursos
 _RESOURCE_APP = AppConfig(
     csp=ResourceCSP(
         resource_domains=["https://unpkg.com", FRONTEND_ORIGIN],
@@ -112,49 +142,49 @@ _RESOURCE_APP = AppConfig(
 )
 
 
-@mcp.tool(app=AppConfig(resource_uri=RANGE_EARNINGS_VIEW_URI, prefers_border=True))
+# -------------------------
+# Tools que ABREN vistas
+# -------------------------
+
+@mcp.tool(app=AppConfig(resource_uri=RANGE_EARNINGS_VIEW_URI, prefers_border=False))
 def open_range_earnings_ui() -> ToolResult:
     """Abre la UI para seleccionar un rango salarial (earnings)."""
-    return ToolResult(
-        content=[
-            types.TextContent(type="text", text="Abriendo UI de rangos salariales…")
-        ]
-    )
+    return ToolResult(content=[types.TextContent(type="text", text="Abriendo UI de rangos salariales…")])
 
 
-@mcp.tool(app=AppConfig(resource_uri=BENEFITS_VIEW_URI, prefers_border=True))
+@mcp.tool(app=AppConfig(resource_uri=BENEFITS_VIEW_URI, prefers_border=False))
 def open_benefits_ui() -> ToolResult:
-    """Abre la UI para seleccionar el tipo de beneficios (cashback, millas, descuentos, etc)."""
-    return ToolResult(
-        content=[types.TextContent(type="text", text="Abriendo UI de beneficios…")]
-    )
-
-
-@mcp.tool(app=AppConfig(resource_uri=CARD_DASHBOARD_VIEW_URI, prefers_border=False))
-def open_card_dashboard_ui() -> ToolResult:
-    """Abre la UI que muestra la lista de tarjetas de crédito."""
-    return ToolResult(
-        content=[types.TextContent(type="text", text="Abriendo Card Dashboard…")]
-    )
+    """Abre la UI para seleccionar el tipo de beneficios."""
+    return ToolResult(content=[types.TextContent(type="text", text="Abriendo UI de beneficios…")])
 
 
 @mcp.tool(
-    app=AppConfig(resource_uri=IDENTIFICATION_FLOW_VIEW_URI, prefers_border=True)
+    app=AppConfig(
+        resource_uri=CARD_DASHBOARD_VIEW_URI,
+        prefers_border=False,
+        visibility=["app"],  # ayuda a que el host lo trate como vista de app
+    )
 )
+def open_card_dashboard_ui() -> ToolResult:
+    """Abre la UI que muestra la lista de tarjetas de crédito."""
+    return ToolResult(content=[types.TextContent(type="text", text="Abriendo Card Dashboard…")])
+
+
+@mcp.tool(app=AppConfig(resource_uri=IDENTIFICATION_FLOW_VIEW_URI, prefers_border=False))
 def open_identification_flow_ui() -> ToolResult:
     """Abre la UI del flujo de identificación del usuario."""
-    return ToolResult(
-        content=[
-            types.TextContent(type="text", text="Abriendo Identification Flow…")
-        ]
-    )
+    return ToolResult(content=[types.TextContent(type="text", text="Abriendo Identification Flow…")])
 
+
+# -------------------------
+# Tools invocados DESDE la app (bridge)
+# -------------------------
 
 @mcp.tool(
     app=AppConfig(
         resource_uri=RANGE_EARNINGS_VIEW_URI,
         visibility=["app"],
-        prefers_border=True,
+        prefers_border=False,
     )
 )
 def build_range_earnings_message(value: str) -> ToolResult:
@@ -173,7 +203,7 @@ def build_range_earnings_message(value: str) -> ToolResult:
     app=AppConfig(
         resource_uri=BENEFITS_VIEW_URI,
         visibility=["app"],
-        prefers_border=True,
+        prefers_border=False,
     )
 )
 def build_benefits_message(value: str) -> ToolResult:
@@ -187,6 +217,10 @@ def build_benefits_message(value: str) -> ToolResult:
     text = messages.get(value, f"Recibí tu selección: {value}")
     return ToolResult(content=[types.TextContent(type="text", text=text)])
 
+
+# -------------------------
+# Resources (HTML wrapper)
+# -------------------------
 
 @mcp.resource(RANGE_EARNINGS_VIEW_URI, app=_RESOURCE_APP)
 def range_earnings_view() -> str:
@@ -208,20 +242,21 @@ def benefits_view() -> str:
 
 @mcp.resource(CARD_DASHBOARD_VIEW_URI, app=_RESOURCE_APP)
 def card_dashboard_view() -> str:
-    return _wrapper_html(
-        iframe_src=f"{FRONTEND_ORIGIN}/card-dashboard",
-        event_type="open_link",
-        tool_name="unknown",
-    )
+    # No necesitamos event_type/tool_name aquí; open_link ya está soportado siempre
+    return _wrapper_html(iframe_src=f"{FRONTEND_ORIGIN}/card-dashboard")
 
 
 @mcp.resource(IDENTIFICATION_FLOW_VIEW_URI, app=_RESOURCE_APP)
 def identification_flow_view() -> str:
     return _wrapper_html(iframe_src=f"{FRONTEND_ORIGIN}/identification-flow")
 
-@mcp.tool(app=AppConfig(resource_uri=RANGE_EARNINGS_VIEW_URI, prefers_border=True))
+
+# Tool “comodín” si quieres mantenerlo, pero que NO apunte a earnings siempre.
+@mcp.tool(app=AppConfig(resource_uri=CARD_DASHBOARD_VIEW_URI, prefers_border=False, visibility=["app"]))
 def open_ui() -> ToolResult:
-    return open_range_earnings_ui()
+    """Abre el dashboard por defecto."""
+    return open_card_dashboard_ui()
+
 
 if __name__ == "__main__":
     mcp.run()
