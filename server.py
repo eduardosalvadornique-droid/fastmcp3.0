@@ -22,31 +22,7 @@ def _wrapper_html(
         event_type: Optional[str] = None,
         tool_name: Optional[str] = None,
 ) -> str:
-        if not event_type or not tool_name:
-                return f"""<!doctype html>
-<html>
-    <head>
-        <meta charset=\"utf-8\" />
-        <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />
-        <style>
-            html, body {{
-                height: 100%;
-                margin: 0;
-                overflow: hidden;
-            }}
-            iframe {{
-                width: 100%;
-                height: 100%;
-                border: 0;
-                display: block;
-            }}
-        </style>
-    </head>
-    <body>
-        <iframe id=\"app\" src=\"{iframe_src}\"></iframe>
-    </body>
-</html>"""
-
+        
         return f"""<!doctype html>
 <html>
   <head>
@@ -54,11 +30,16 @@ def _wrapper_html(
     <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />
     <style>
       html, body {{
+        width: 100%;
         height: 100%;
         margin: 0;
         overflow: hidden;
       }}
+      body {{
+        display: flex;
+      }}
       iframe {{
+        flex: 1 1 auto;
         width: 100%;
         height: 100%;
         border: 0;
@@ -81,9 +62,6 @@ def _wrapper_html(
       window.addEventListener("message", async (ev) => {{
         const data = ev.data || {{}};
 
-        if (ev.source !== iframe.contentWindow) return;
-
-
         if (data.type === "open_link" && typeof data.url === "string") {{
           const result = await app.openLink({{ url: data.url }});
           if (result?.isError) {{
@@ -94,6 +72,8 @@ def _wrapper_html(
           }}
           return;
         }}
+
+        if (ev.source !== iframe.contentWindow) return;
 
         if (data.type !== "{event_type}") return;
 
@@ -126,7 +106,7 @@ _RESOURCE_APP = AppConfig(
         resource_domains=["https://unpkg.com", FRONTEND_ORIGIN],
         frame_domains=[FRONTEND_ORIGIN],
     ),
-    prefers_border=True,
+    prefers_border=False,
 )
 
 
@@ -148,7 +128,7 @@ def open_benefits_ui() -> ToolResult:
     )
 
 
-@mcp.tool(app=AppConfig(resource_uri=CARD_DASHBOARD_VIEW_URI, prefers_border=True))
+@mcp.tool(app=AppConfig(resource_uri=CARD_DASHBOARD_VIEW_URI, prefers_border=False))
 def open_card_dashboard_ui() -> ToolResult:
     """Abre la UI que muestra la lista de tarjetas de crédito."""
     return ToolResult(
