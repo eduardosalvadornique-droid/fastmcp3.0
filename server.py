@@ -219,7 +219,11 @@ def benefits_view() -> str:
 
 @mcp.resource(CARD_DASHBOARD_VIEW_URI, app=_RESOURCE_APP)
 def card_dashboard_view() -> str:
-    return _wrapper_html(iframe_src=f"{FRONTEND_ORIGIN}/card-dashboard")
+    return _wrapper_html(
+        iframe_src=f"{FRONTEND_ORIGIN}/card-dashboard",
+        event_type="open_link",
+        tool_name="unknown",
+    )
 
 
 @mcp.resource(IDENTIFICATION_FLOW_VIEW_URI, app=_RESOURCE_APP)
