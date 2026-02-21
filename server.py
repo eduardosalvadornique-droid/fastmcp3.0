@@ -1,5 +1,5 @@
 from fastmcp import FastMCP
-from fastmcp.server.apps import AppConfig, ResourceCSP
+from fastmcp.server.apps import AppConfig, ResourceCSP, ResourcePermissions
 from fastmcp.tools import ToolResult
 from mcp import types
 from typing import Optional
@@ -125,6 +125,10 @@ _RESOURCE_APP = AppConfig(
     csp=ResourceCSP(
         resource_domains=["https://unpkg.com", FRONTEND_ORIGIN],
         frame_domains=[FRONTEND_ORIGIN],
+    ),
+    permissions=ResourcePermissions(
+        camera={},
+        microphone={},
     ),
     prefers_border=False,
 )
@@ -280,7 +284,7 @@ def card_dashboard_view() -> str:
 def identification_flow_view() -> str:
     return _wrapper_html(
         iframe_src=f"{FRONTEND_ORIGIN}/identification-flow",
-        event_type="indetification_send_data",
+        event_type="identification_send_data",
         tool_name="build_identification_message",
     )
 
