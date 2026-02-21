@@ -102,18 +102,26 @@ def _wrapper_html(
 
         const text = toolResult?.content?.find(c => c.type === "text")?.text
           ?? `Selección: ${{value}}`;
-        const nextToolName = toolResult?.structuredContent?.next_tool_name;
-        const nextToolArguments = toolResult?.structuredContent?.next_tool_arguments;
+        const structured = toolResult?.structuredContent ?? toolResult?.structured_content ?? null;
+        const nextToolName = structured?.next_tool_name;
+        const nextToolArguments = structured?.next_tool_arguments;
 
         await app.sendMessage({{
           role: "user",
           content: [{{ type: "text", text }}]
         }});
         if (typeof nextToolName === "string" && nextToolName.length > 0) {{
-          await app.callServerTool({{
-            name: nextToolName,
-            arguments: nextToolArguments ?? {{}}
-          }});
+          try {{
+            await app.callServerTool({{
+              name: nextToolName,
+              arguments: nextToolArguments ?? {{}}
+            }});
+          }} catch (err) {{
+            await app.sendMessage({{
+              role: "user",
+              content: [{{ type: "text", text: "No pude abrir la siguiente UI automáticamente." }}]
+            }});
+          }}
         }}
       }});
     </script>
@@ -160,7 +168,13 @@ def open_card_dashboard_ui() -> ToolResult:
     )
 
 
-@mcp.tool(app=AppConfig(resource_uri=CARD_DASHBOARD_VIEW_URI, prefers_border=False))
+@mcp.tool(
+    app=AppConfig(
+        resource_uri=CARD_DASHBOARD_VIEW_URI,
+        visibility=["app"],
+        prefers_border=False,
+    )
+)
 def open_card_dashboard_ui_with_count(count: Optional[int] = None) -> ToolResult:
     """Abre la UI de tarjetas permitiendo definir el count opcional para el query param."""
     global _card_dashboard_count
