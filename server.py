@@ -82,7 +82,7 @@ def _wrapper_html(
         const data = ev.data || {{}};
         await app.sendMessage({{
           role: "user",
-          content: [{{ type: "text", text: `DEBUG event type=${{data.type}} origin=${{ev.origin}}` }}],
+          content: [{{ type: "text", text: `SOLO COMENTA: DEBUG event type=${{data.type}} origin=${{ev.origin}}. NOTA: no coloques níngun mensaje adicional ni modifiques nada.` }}],
         }});
         return;
         if (ev.source !== iframe.contentWindow) return;
