@@ -79,6 +79,7 @@ def _wrapper_html(
       let lastSentAt = 0;
 
       window.addEventListener("message", async (ev) => {{
+        const data = ev.data || {{}};
         if (data.type === "open_link") {{
           await app.sendMessage({{
             role: "user",
