@@ -3,6 +3,7 @@ from fastmcp.server.apps import AppConfig, ResourceCSP
 from fastmcp.tools import ToolResult
 from mcp import types
 from typing import Optional
+import random
 
 mcp = FastMCP("Catalog App Server")
 
@@ -14,6 +15,7 @@ RANGE_EARNINGS_VIEW_URI = "ui://catalog/range-earnings.html"
 BENEFITS_VIEW_URI = "ui://catalog/benefits.html"
 CARD_DASHBOARD_VIEW_URI = "ui://catalog/card-dashboard.html"
 IDENTIFICATION_FLOW_VIEW_URI = "ui://catalog/identification-flow.html"
+_card_dashboard_count: Optional[int] = None
 
 
 def _wrapper_html(
@@ -53,7 +55,8 @@ def _wrapper_html(
     <iframe
       id="app"
       src="{iframe_src}"
-      allow="clipboard-read; clipboard-write; fullscreen"
+      allow="camera; microphone; clipboard-read; clipboard-write; fullscreen"
+      referrerpolicy="strict-origin-when-cross-origin"
     ></iframe>
 
     <script type=\"module\">
@@ -67,6 +70,9 @@ def _wrapper_html(
 
       window.addEventListener("message", async (ev) => {{
         const data = ev.data || {{}};
+        const expectedOrigin = new URL("{iframe_src}").origin;
+
+        if (ev.origin !== expectedOrigin) return;
 
         if (data.type === "open_link" && typeof data.url === "string") {{
           const result = await app.openLink({{ url: data.url }});
@@ -96,11 +102,19 @@ def _wrapper_html(
 
         const text = toolResult?.content?.find(c => c.type === "text")?.text
           ?? `Selección: ${{value}}`;
+        const nextToolName = toolResult?.structuredContent?.next_tool_name;
+        const nextToolArguments = toolResult?.structuredContent?.next_tool_arguments;
 
         await app.sendMessage({{
           role: "user",
           content: [{{ type: "text", text }}]
         }});
+        if (typeof nextToolName === "string" && nextToolName.length > 0) {{
+          await app.callServerTool({{
+            name: nextToolName,
+            arguments: nextToolArguments ?? {{}}
+          }});
+        }}
       }});
     </script>
   </body>
@@ -137,6 +151,20 @@ def open_benefits_ui() -> ToolResult:
 @mcp.tool(app=AppConfig(resource_uri=CARD_DASHBOARD_VIEW_URI, prefers_border=False))
 def open_card_dashboard_ui() -> ToolResult:
     """Abre la UI que muestra la lista de tarjetas de crédito."""
+    return ToolResult(
+        content=[types.TextContent(type="text", text="Abriendo Card Dashboard…")]
+    )
+
+
+@mcp.tool(app=AppConfig(resource_uri=CARD_DASHBOARD_VIEW_URI, prefers_border=False))
+def open_card_dashboard_ui_with_count(count: Optional[int] = None) -> ToolResult:
+    """Abre la UI de tarjetas permitiendo definir el count opcional para el query param."""
+    global _card_dashboard_count
+    if count is not None and 1 <= count <= 5:
+        _card_dashboard_count = count
+    else:
+        _card_dashboard_count = None
+
     return ToolResult(
         content=[types.TextContent(type="text", text="Abriendo Card Dashboard…")]
     )
@@ -192,6 +220,29 @@ def build_benefits_message(value: str) -> ToolResult:
     return ToolResult(content=[types.TextContent(type="text", text=text)])
 
 
+@mcp.tool(
+    app=AppConfig(
+        resource_uri=IDENTIFICATION_FLOW_VIEW_URI,
+        visibility=["app"],
+        prefers_border=True,
+    )
+)
+def build_identification_message(value: str) -> ToolResult:
+    print(f"[tool] build_identification_message value={value!r}")
+    count = random.randint(1, 5)
+    text = (
+        f"SOLO COMENTA: YA TE HEMOS EVALUADO CON TU DNI {value} y a continuación te mostraremos "
+        "tus tarjetas disponibles. NOTA: no coloques níngun mensaje adicional ni modifiques nada."
+    )
+    return ToolResult(
+        content=[types.TextContent(type="text", text=text)],
+        structured_content={
+            "next_tool_name": "open_card_dashboard_ui_with_count",
+            "next_tool_arguments": {"count": count},
+        },
+    )
+
+
 @mcp.resource(RANGE_EARNINGS_VIEW_URI, app=_RESOURCE_APP)
 def range_earnings_view() -> str:
     return _wrapper_html(
@@ -212,8 +263,14 @@ def benefits_view() -> str:
 
 @mcp.resource(CARD_DASHBOARD_VIEW_URI, app=_RESOURCE_APP)
 def card_dashboard_view() -> str:
+    global _card_dashboard_count
+    iframe_src = f"{FRONTEND_ORIGIN}/card-dashboard"
+    if _card_dashboard_count is not None:
+        iframe_src = f"{iframe_src}?count={_card_dashboard_count}"
+        _card_dashboard_count = None
+
     return _wrapper_html(
-        iframe_src=f"{FRONTEND_ORIGIN}/card-dashboard",
+        iframe_src=iframe_src,
         event_type="open_link",
         tool_name="unknown",
     )
@@ -221,7 +278,11 @@ def card_dashboard_view() -> str:
 
 @mcp.resource(IDENTIFICATION_FLOW_VIEW_URI, app=_RESOURCE_APP)
 def identification_flow_view() -> str:
-    return _wrapper_html(iframe_src=f"{FRONTEND_ORIGIN}/identification-flow")
+    return _wrapper_html(
+        iframe_src=f"{FRONTEND_ORIGIN}/identification-flow",
+        event_type="indetification_send_data",
+        tool_name="build_identification_message",
+    )
 
 @mcp.tool(app=AppConfig(resource_uri=RANGE_EARNINGS_VIEW_URI, prefers_border=True))
 def open_ui() -> ToolResult:
