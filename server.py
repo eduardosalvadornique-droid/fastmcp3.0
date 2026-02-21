@@ -79,6 +79,12 @@ def _wrapper_html(
       let lastSentAt = 0;
 
       window.addEventListener("message", async (ev) => {{
+        if (data.type === "open_link") {{
+          await app.sendMessage({{
+            role: "user",
+            content: [{{ type: "text", text: `DEBUG open_link recibido: ${{data.url}}` }}],
+          }});
+        }}
         if (ev.source !== iframe.contentWindow) return;
 
         const data = ev.data || {{}};
