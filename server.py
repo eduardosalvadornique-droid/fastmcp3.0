@@ -89,7 +89,7 @@ def _wrapper_html(
           if (result?.isError) {{
             await app.sendMessage({{
               role: "user",
-              content: [{{ type: "text", text: `No pude abrir el link automáticamente. Aquí está: ${data.url}` }}],
+              content: [{{ type: "text", text: `No pude abrir el link automáticamente. Aquí está: ${{data.url}}` }}],
             }});
           }}
           return;
