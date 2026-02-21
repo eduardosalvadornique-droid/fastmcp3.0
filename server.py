@@ -30,9 +30,10 @@ def _wrapper_html(
     <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />
     <style>
       html, body {{
-        width: 100%;
-        height: 100%;
         margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100vh;
         overflow: hidden;
       }}
       body {{
@@ -41,7 +42,8 @@ def _wrapper_html(
       iframe {{
         flex: 1 1 auto;
         width: 100%;
-        height: 100%;
+        height: 100vh;
+        min-height: 720px;
         border: 0;
         display: block;
       }}
