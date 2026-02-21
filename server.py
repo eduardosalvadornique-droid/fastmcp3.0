@@ -82,6 +82,14 @@ def _wrapper_html(
         if (ev.source !== iframe.contentWindow) return;
 
         const data = ev.data || {{}};
+
+        if (data.type === "open_link") {{
+          await app.sendMessage({{
+            role: "user",
+            content: [{{ type: "text", text: `DEBUG open_link recibido: ${{data.url}}` }}],
+          }});
+        }}
+
         
         if (data.type === "open_link" && typeof data.url === "string") {{
           const result = await app.openLink({{ url: data.url }});
