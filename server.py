@@ -103,23 +103,17 @@ def _wrapper_html(
         const text = toolResult?.content?.find(c => c.type === "text")?.text
           ?? `Selección: ${{value}}`;
         const structured = toolResult?.structuredContent ?? toolResult?.structured_content ?? null;
-        const nextToolName = structured?.next_tool_name;
-        const nextToolArguments = structured?.next_tool_arguments;
-
-        let composedText = text;
-        if (typeof nextToolName === "string" && nextToolName.length > 0) {{
-          const argsJson = JSON.stringify(nextToolArguments ?? {{}});
-          composedText = `INSTRUCCION OBLIGATORIA:
-            1) Responde EXACTAMENTE este texto al usuario, sin cambios:
-            "${{text}}"
-            2) Luego ejecuta la herramienta "${{nextToolName}}" con argumentos ${{argsJson}}.
-            3) No agregues nada mas.`;
-        }}
+        const nextUiUri = structured?.next_ui_uri;
 
         await app.sendMessage({{
           role: "user",
-          content: [{{ type: "text", text: composedText }}]
+          content: [{{ type: "text", text }}]
         }});
+
+        if (typeof nextUiUri === "string" && nextUiUri.length > 0) {{
+          iframe.src = nextUiUri;
+          return;
+        }}
       }});
     </script>
   </body>
@@ -251,8 +245,7 @@ def build_identification_message(value: str) -> ToolResult:
     return ToolResult(
         content=[types.TextContent(type="text", text=text)],
         structured_content={
-            "next_tool_name": "open_card_dashboard_ui_with_count",
-            "next_tool_arguments": {"count": count},
+            "next_ui_uri": f"{FRONTEND_ORIGIN}/card-dashboard?count={count}",
         },
     )
 
