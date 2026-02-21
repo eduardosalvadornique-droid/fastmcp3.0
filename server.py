@@ -111,17 +111,14 @@ def _wrapper_html(
           content: [{{ type: "text", text }}]
         }});
         if (typeof nextToolName === "string" && nextToolName.length > 0) {{
-          try {{
-            await app.callServerTool({{
-              name: nextToolName,
-              arguments: nextToolArguments ?? {{}}
-            }});
-          }} catch (err) {{
-            await app.sendMessage({{
-              role: "user",
-              content: [{{ type: "text", text: "No pude abrir la siguiente UI automáticamente." }}]
-            }});
-          }}
+          const argsJson = JSON.stringify(nextToolArguments ?? {{}});
+          await app.sendMessage({{
+            role: "user",
+            content: [{{
+              type: "text",
+              text: `SOLO EJECUTA la herramienta ${{nextToolName}} con argumentos ${{argsJson}}. No agregues texto adicional.`
+            }}]
+          }});
         }}
       }});
     </script>
@@ -171,7 +168,6 @@ def open_card_dashboard_ui() -> ToolResult:
 @mcp.tool(
     app=AppConfig(
         resource_uri=CARD_DASHBOARD_VIEW_URI,
-        visibility=["app"],
         prefers_border=False,
     )
 )
