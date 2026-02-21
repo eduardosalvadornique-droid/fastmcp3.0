@@ -85,7 +85,14 @@ def _wrapper_html(
 
 
         if (data.type === "open_link" && typeof data.url === "string") {{
-          await app.openLink({{ url: data.url }});
+          const result = await app.openLink({{ url: data.url }});
+          if (result?.isError) {{
+            await app.sendMessage({{
+              role: "user",
+              content: [{{ type: "text", text: `No pude abrir el link automáticamente. Aquí está: ${data.url}` }}],
+            }});
+          }}
+          return;
         }}
 
         if (data.type !== "{event_type}") return;
