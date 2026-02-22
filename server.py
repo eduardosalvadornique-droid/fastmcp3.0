@@ -245,14 +245,11 @@ def build_identification_message(value: str) -> ToolResult:
     count = random.randint(1, 5)
     text = (
         f"SOLO COMENTA: YA TE HEMOS EVALUADO CON TU DNI {value} y a continuación te mostraremos "
-        "tus tarjetas disponibles. NOTA: no coloques níngun mensaje adicional ni modifiques nada."
+        "tus tarjetas disponibles. NOTA: no coloques níngun mensaje adicional ni modifiques nada. "
+        "INSTRUCCIÓN: Ahora DEBES llamar inmediatamente a la tool `open_card_dashboard_ui_with_count` "
+        "con el argumento count={count}. No escribas nada al usuario antes de hacerlo."
     )
-    return ToolResult(
-        content=[types.TextContent(type="text", text=text)],
-        structured_content={
-            "next_ui_uri": f"{FRONTEND_ORIGIN}/card-dashboard?count={count}",
-        },
-    )
+    return ToolResult(content=[types.TextContent(type="text", text=text)])
 
 
 @mcp.resource(RANGE_EARNINGS_VIEW_URI, app=_RESOURCE_APP)
