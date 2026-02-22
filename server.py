@@ -109,11 +109,6 @@ def _wrapper_html(
           role: "user",
           content: [{{ type: "text", text }}]
         }});
-
-        if (typeof nextUiUri === "string" && nextUiUri.length > 0) {{
-          iframe.src = nextUiUri;
-          return;
-        }}
       }});
     </script>
   </body>
@@ -200,12 +195,17 @@ def open_identification_flow_ui() -> ToolResult:
 def build_range_earnings_message(value: str) -> ToolResult:
     print(f"[tool] build_range_earnings_message value={value!r}")
     messages = {
-        "lt_1200": "SOLO COMENTA: Elegiste menos de **S/ 1200**. NOTA: no coloques níngun mensaje adicional ni modifiques nada.",
-        "1200_2500": "SOLO COMENTA: Elegiste **S/ 1200 - S/ 2500**. NOTA: no coloques níngun mensaje adicional ni modifiques nada.",
-        "2501_5000": "SOLO COMENTA: Elegiste **S/ 2501 - S/ 5000**. NOTA: no coloques níngun mensaje adicional ni modifiques nada.",
-        "gt_5000": "SOLO COMENTA: Elegiste más de **S/ 5000**. NOTA: no coloques níngun mensaje adicional ni modifiques nada.",
+        "lt_1200": "El usuario eligió menos de S/ 1200.",
+        "1200_2500": "El usuario eligió S/ 1200 - S/ 2500.",
+        "2501_5000": "El usuario eligió S/ 2501 - S/ 5000.",
+        "gt_5000": "El usuario eligió más de S/ 5000.",
     }
-    text = messages.get(value, f"Recibí tu selección: {value}")
+    label = messages.get(value, f"Recibí : {value}")
+    text = (
+        f"{label} "
+        "INSTRUCCIÓN: Ahora DEBES llamar inmediatamente a la tool `open_benefits_ui` "
+        "para mostrar la siguiente pantalla. No escribas nada al usuario antes de hacerlo."
+    )
     return ToolResult(content=[types.TextContent(type="text", text=text)])
 
 
@@ -219,12 +219,17 @@ def build_range_earnings_message(value: str) -> ToolResult:
 def build_benefits_message(value: str) -> ToolResult:
     print(f"[tool] build_benefits_message value={value!r}")
     messages = {
-        "cb": "SOLO COMENTA: Elegiste **Cashback** como beneficio. NOTA: no coloques níngun mensaje adicional ni modifiques nada.",
-        "mv": "SOLO COMENTA: Elegiste **Millas / Viaje** como beneficio. NOTA: no coloques níngun mensaje adicional ni modifiques nada.",
-        "dl": "SOLO COMENTA: Elegiste **Descuentos locales** como beneficio. NOTA: no coloques níngun mensaje adicional ni modifiques nada.",
-        "rg": "SOLO COMENTA: Elegiste **Recompensas generales** como beneficio. NOTA: no coloques níngun mensaje adicional ni modifiques nada.",
+        "cb": "El usuario eligió Cashback.",
+        "mv": "El usuario eligió Millas / Viaje.",
+        "dl": "El usuario eligió Descuentos locales.",
+        "rg": "El usuario eligió Recompensas generales.",
     }
-    text = messages.get(value, f"Recibí tu selección: {value}")
+    label = messages.get(value, f"Recibí: {value}")
+    text = (
+        f"{label} "
+        "INSTRUCCIÓN: Ahora DEBES llamar inmediatamente a la tool `open_identification_flow_ui` "
+        "para mostrar la siguiente pantalla. No escribas nada al usuario antes de hacerlo."
+    )
     return ToolResult(content=[types.TextContent(type="text", text=text)])
 
 
