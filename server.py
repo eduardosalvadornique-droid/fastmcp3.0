@@ -201,7 +201,6 @@ def start_card_application_flow() -> ToolResult:
 @mcp.tool(
     app=AppConfig(
         resource_uri=BENEFITS_VIEW_URI,
-        visibility=["app"],
         prefers_border=True,
     )
 )
@@ -215,7 +214,6 @@ def open_benefits_ui() -> ToolResult:
 @mcp.tool(
     app=AppConfig(
         resource_uri=CARD_DASHBOARD_VIEW_URI,
-        visibility=["app"],
         prefers_border=False,
     )
 )
@@ -233,7 +231,6 @@ def open_card_dashboard_ui() -> ToolResult:
 @mcp.tool(
     app=AppConfig(
         resource_uri=CARD_DASHBOARD_VIEW_READONLY_URI,
-        visibility=["app"],
         prefers_border=False,
     )
 )
@@ -250,7 +247,6 @@ def open_card_dashboard_ui_readonly() -> ToolResult:
 @mcp.tool(
     app=AppConfig(
         resource_uri=CARD_DASHBOARD_VIEW_URI,
-        visibility=["app"],
         prefers_border=False,
     )
 )
@@ -266,7 +262,6 @@ def open_card_dashboard_ui_with_count(count: Optional[int] = None) -> ToolResult
 @mcp.tool(
     app=AppConfig(
         resource_uri=IDENTIFICATION_FLOW_VIEW_URI,
-        visibility=["app"],
         prefers_border=True,
     )
 )
@@ -281,8 +276,7 @@ def open_identification_flow_ui() -> ToolResult:
 
 @mcp.tool(
     app=AppConfig(
-        resource_uri=BENEFITS_VIEW_URI,
-        visibility=["app"],
+        resource_uri=RANGE_EARNINGS_VIEW_URI,
         prefers_border=True,
     )
 )
@@ -296,13 +290,17 @@ def on_range_selected(value: str) -> ToolResult:
     }
     label = messages.get(value, f"Recibí : {value}")
     _tool_info_store.save("on_range_selected", label)
-    return ToolResult(content=[types.TextContent(type="text", text=label)])
+    text = (
+        f"Seleccionaste: {label}.\n"
+        "INSTRUCCION OBLIGATORIA: llama ahora la tool `open_benefits_ui`.\n"
+        "No agregues explicaciones ni texto adicional."
+    )
+    return ToolResult(content=[types.TextContent(type="text", text=text)])
 
 
 @mcp.tool(
     app=AppConfig(
-        resource_uri=IDENTIFICATION_FLOW_VIEW_URI,
-        visibility=["app"],
+        resource_uri=BENEFITS_VIEW_URI,
         prefers_border=True,
     )
 )
@@ -316,13 +314,17 @@ def on_benefit_selected(value: str) -> ToolResult:
     }
     label = messages.get(value, f"Recibí: {value}")
     _tool_info_store.save("on_benefit_selected", label)
-    return ToolResult(content=[types.TextContent(type="text", text=label)])
+    text = (
+        f"Seleccionaste: {label}.\n"
+        "INSTRUCCION OBLIGATORIA: llama ahora la tool `open_identification_flow_ui`.\n"
+        "No agregues explicaciones ni texto adicional."
+    )
+    return ToolResult(content=[types.TextContent(type="text", text=text)])
 
 
 @mcp.tool(
     app=AppConfig(
-        resource_uri=CARD_DASHBOARD_VIEW_URI,
-        visibility=["app"],
+        resource_uri=IDENTIFICATION_FLOW_VIEW_URI,
         prefers_border=False,
     )
 )
@@ -332,7 +334,12 @@ def on_identification_submitted(value: str) -> ToolResult:
     _tool_info_store.save("on_identification_submitted", label)
     summary = _tool_info_store.summary_text()
     user_message = f"{label} y a continuación te mostraremos tus tarjetas disponibles. RESUMEN TOOLS: {summary}."
-    return ToolResult(content=[types.TextContent(type="text", text=user_message)])
+    text = (
+        f"{user_message}\n"
+        "INSTRUCCION OBLIGATORIA: llama ahora la tool `open_card_dashboard_ui_with_count`.\n"
+        "No agregues explicaciones ni texto adicional."
+    )
+    return ToolResult(content=[types.TextContent(type="text", text=text)])
 
 
 @mcp.resource(RANGE_EARNINGS_VIEW_URI, app=_RESOURCE_APP)
