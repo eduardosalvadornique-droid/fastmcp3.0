@@ -203,9 +203,9 @@ def build_range_earnings_message(value: str) -> ToolResult:
     label = messages.get(value, f"Recibí : {value}")
     _store_tool_data("build_range_earnings_message", label)
     text = (
-        f"PRIMERO: muestra este mensaje al usuario: {label}. "
-        "DESPUÉS: llama inmediatamente a la tool `open_benefits_ui`. "
-        "No expliques tu razonamiento."
+        f"SOLO COMENTA: {label} "
+        "INSTRUCCIÓN: Ahora DEBES llamar inmediatamente a la tool `open_benefits_ui` "
+        "para mostrar la siguiente pantalla. No escribas nada al usuario antes de hacerlo."
     )
     return ToolResult(content=[types.TextContent(type="text", text=text)])
 
@@ -228,9 +228,9 @@ def build_benefits_message(value: str) -> ToolResult:
     label = messages.get(value, f"Recibí: {value}")
     _store_tool_data("build_benefits_message", label)
     text = (
-        f"PRIMERO: muestra este mensaje al usuario: {label}. "
-        "DESPUÉS: llama inmediatamente a la tool `open_identification_flow_ui`. "
-        "No expliques tu razonamiento."
+        f"SOLO COMENTA: {label} "
+        "INSTRUCCIÓN: Ahora DEBES llamar inmediatamente a la tool `open_identification_flow_ui` "
+        "para mostrar la siguiente pantalla. No escribas nada al usuario antes de hacerlo."
     )
     return ToolResult(content=[types.TextContent(type="text", text=text)])
 
@@ -250,11 +250,12 @@ def build_identification_message(value: str) -> ToolResult:
         f"{tool}: label={data['label']}; mensaje_fijo={data['mensaje_fijo']}"
         for tool, data in _app_tool_data.items()
     )
-    user_message = f"{label} y a continuación te mostraremos tus tarjetas disponibles. RESUMEN TOOLS: {summary}."
     text = (
-        f"PRIMERO: muestra este mensaje al usuario: {user_message}. "
-        "DESPUÉS: llama inmediatamente a la tool `open_card_dashboard_ui_with_count`. "
-        "No expliques tu razonamiento."
+        f"SOLO COMENTA: {label} y a continuación te mostraremos "
+        f"tus tarjetas disponibles. RESUMEN TOOLS: {summary}. "
+        f"NOTA: no coloques níngun mensaje adicional ni modifiques nada. "
+        f"INSTRUCCIÓN: Ahora DEBES llamar inmediatamente a la tool `open_card_dashboard_ui_with_count` "
+        f".No escribas nada al usuario antes de hacerlo."
     )
     return ToolResult(content=[types.TextContent(type="text", text=text)])
 
