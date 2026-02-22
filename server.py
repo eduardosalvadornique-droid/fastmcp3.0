@@ -16,6 +16,16 @@ BENEFITS_VIEW_URI = "ui://catalog/benefits.html"
 CARD_DASHBOARD_VIEW_URI = "ui://catalog/card-dashboard.html"
 IDENTIFICATION_FLOW_VIEW_URI = "ui://catalog/identification-flow.html"
 _card_dashboard_count: Optional[int] = None
+_app_tool_data: dict[str, dict[str, str]] = {}
+
+
+def _store_tool_data(tool_name: str, label: str) -> dict[str, str]:
+    entry = {
+        "label": label,
+        "mensaje_fijo": f"{tool_name}_{random.randint(1, 5)}",
+    }
+    _app_tool_data[tool_name] = entry
+    return entry
 
 
 def _wrapper_html(
@@ -191,10 +201,13 @@ def build_range_earnings_message(value: str) -> ToolResult:
         "gt_5000": "El usuario eligió más de S/ 5000.",
     }
     label = messages.get(value, f"Recibí : {value}")
+    _store_tool_data("build_range_earnings_message", label)
     text = (
-        f"SOLO COMENTA: {label} "
-        "INSTRUCCIÓN: Ahora DEBES llamar inmediatamente a la tool `open_benefits_ui` "
-        "para mostrar la siguiente pantalla. No escribas nada al usuario antes de hacerlo."
+        "TAREA OBLIGATORIA (haz ambas cosas, en este orden): "
+        f"1) Responde al usuario exactamente con este texto: \"{label}\". "
+        "2) Inmediatamente después, llama a la tool `open_benefits_ui`. "
+        "REGLAS: No omitas el paso 1. No reformules el texto del paso 1. "
+        "No agregues texto extra. Si no puedes llamar la tool, igual muestra primero el texto del paso 1."
     )
     return ToolResult(content=[types.TextContent(type="text", text=text)])
 
@@ -215,10 +228,13 @@ def build_benefits_message(value: str) -> ToolResult:
         "rg": "El usuario eligió Recompensas generales.",
     }
     label = messages.get(value, f"Recibí: {value}")
+    _store_tool_data("build_benefits_message", label)
     text = (
-        f"SOLO COMENTA: {label} "
-        "INSTRUCCIÓN: Ahora DEBES llamar inmediatamente a la tool `open_identification_flow_ui` "
-        "para mostrar la siguiente pantalla. No escribas nada al usuario antes de hacerlo."
+        "TAREA OBLIGATORIA (haz ambas cosas, en este orden): "
+        f"1) Responde al usuario exactamente con este texto: \"{label}\". "
+        "2) Inmediatamente después, llama a la tool `open_identification_flow_ui`. "
+        "REGLAS: No omitas el paso 1. No reformules el texto del paso 1. "
+        "No agregues texto extra. Si no puedes llamar la tool, igual muestra primero el texto del paso 1."
     )
     return ToolResult(content=[types.TextContent(type="text", text=text)])
 
@@ -230,20 +246,21 @@ def build_benefits_message(value: str) -> ToolResult:
         prefers_border=True,
     )
 )
-@mcp.tool(
-    app=AppConfig(
-        resource_uri=IDENTIFICATION_FLOW_VIEW_URI,
-        visibility=["app"],
-        prefers_border=True,
-    )
-)
 def build_identification_message(value: str) -> ToolResult:
     print(f"[tool] build_identification_message value={value!r}")
+    label = f"YA TE HEMOS EVALUADO CON TU DNI {value}"
+    _store_tool_data("build_identification_message", label)
+    summary = " | ".join(
+        f"{tool}: label={data['label']}; mensaje_fijo={data['mensaje_fijo']}"
+        for tool, data in _app_tool_data.items()
+    )
+    user_message = f"{label} y a continuación te mostraremos tus tarjetas disponibles. RESUMEN TOOLS: {summary}."
     text = (
-        f"SOLO COMENTA: YA TE HEMOS EVALUADO CON TU DNI {value} y a continuación te mostraremos "
-        f"tus tarjetas disponibles. NOTA: no coloques níngun mensaje adicional ni modifiques nada. "
-        f"INSTRUCCIÓN: Ahora DEBES llamar inmediatamente a la tool `open_card_dashboard_ui_with_count` "
-        f".No escribas nada al usuario antes de hacerlo."
+        "TAREA OBLIGATORIA (haz ambas cosas, en este orden): "
+        f"1) Responde al usuario exactamente con este texto: \"{user_message}\". "
+        "2) Inmediatamente después, llama a la tool `open_card_dashboard_ui_with_count`. "
+        "REGLAS: El mensaje del paso 1 es obligatorio. No lo edites ni lo resumas. "
+        "No agregues mensajes adicionales. Si no puedes llamar la tool, igual muestra primero el texto del paso 1."
     )
     return ToolResult(content=[types.TextContent(type="text", text=text)])
 
