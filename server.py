@@ -164,7 +164,6 @@ _RESOURCE_APP = AppConfig(
 @mcp.tool(
     app=AppConfig(
         resource_uri=RANGE_EARNINGS_VIEW_URI,
-        visibility=["app"],
         prefers_border=True,
     )
 )
@@ -182,7 +181,6 @@ def open_range_earnings_ui() -> ToolResult:
 @mcp.tool(
     app=AppConfig(
         resource_uri=RANGE_EARNINGS_VIEW_URI,
-        visibility=["app"],
         prefers_border=True,
     )
 )
