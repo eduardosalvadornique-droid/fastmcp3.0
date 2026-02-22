@@ -14,7 +14,6 @@ FRONTEND_ORIGIN = (
 RANGE_EARNINGS_VIEW_URI = "ui://catalog/range-earnings.html"
 BENEFITS_VIEW_URI = "ui://catalog/benefits.html"
 CARD_DASHBOARD_VIEW_URI = "ui://catalog/card-dashboard.html"
-CARD_DASHBOARD_WITH_COUNT_URI = "ui://catalog/card-dashboard/{count}"
 IDENTIFICATION_FLOW_VIEW_URI = "ui://catalog/identification-flow.html"
 _card_dashboard_count: Optional[int] = None
 
@@ -156,9 +155,11 @@ def open_card_dashboard_ui() -> ToolResult:
 
 
 @mcp.tool(
-    app=AppConfig(resource_uri=CARD_DASHBOARD_WITH_COUNT_URI, prefers_border=False)
+    app=AppConfig(resource_uri=CARD_DASHBOARD_VIEW_URI, prefers_border=False)
 )
-def open_card_dashboard_ui_with_count(count: int) -> ToolResult:
+def open_card_dashboard_ui_with_count(count: Optional[int] = None) -> ToolResult:
+    global _card_dashboard_count
+    _card_dashboard_count = count
     return ToolResult(
         content=[types.TextContent(type="text", text="Abriendo Card Dashboard…")]
     )
@@ -276,16 +277,6 @@ def card_dashboard_view() -> str:
         iframe_src = f"{iframe_src}?count={_card_dashboard_count}"
         _card_dashboard_count = None
 
-    return _wrapper_html(
-        iframe_src=iframe_src,
-        event_type="open_link",
-        tool_name="unknown",
-    )
-
-
-@mcp.resource(CARD_DASHBOARD_WITH_COUNT_URI, app=_RESOURCE_APP)
-def card_dashboard_view_with_count(count: int) -> str:
-    iframe_src = f"{FRONTEND_ORIGIN}/card-dashboard?count={count}"
     return _wrapper_html(
         iframe_src=iframe_src,
         event_type="open_link",
