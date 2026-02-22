@@ -136,27 +136,12 @@ def _wrapper_html(
         const text = toolResult?.content?.find(c => c.type === "text")?.text
           ?? `Selección: ${{value}}`;
         const structured = toolResult?.structuredContent ?? toolResult?.structured_content ?? null;
-        const nextToolName = structured?.next_tool_name ?? null;
-        const nextToolArguments = structured?.next_tool_arguments ?? {{}};
+        const nextUiUri = structured?.next_ui_uri;
 
         await app.sendMessage({{
           role: "user",
           content: [{{ type: "text", text }}]
         }});
-
-        if (typeof nextToolName === "string" && nextToolName.length > 0) {{
-          try {{
-            await app.callServerTool({{
-              name: nextToolName,
-              arguments: nextToolArguments
-            }});
-          }} catch (err) {{
-            await app.sendMessage({{
-              role: "user",
-              content: [{{ type: "text", text: `No pude abrir la siguiente pantalla automáticamente (${{nextToolName}}).` }}]
-            }});
-          }}
-        }}
       }});
     </script>
   </body>
@@ -291,7 +276,7 @@ def open_identification_flow_ui() -> ToolResult:
 
 @mcp.tool(
     app=AppConfig(
-        resource_uri=BENEFITS_VIEW_URI,
+        resource_uri=RANGE_EARNINGS_VIEW_URI,
         prefers_border=True,
     )
 )
@@ -305,19 +290,17 @@ def on_range_selected(value: str) -> ToolResult:
     }
     label = messages.get(value, f"Recibí : {value}")
     _tool_info_store.save("on_range_selected", label)
-    text = label
-    return ToolResult(
-        content=[types.TextContent(type="text", text=text)],
-        structured_content={
-            "next_tool_name": "open_benefits_ui",
-            "next_tool_arguments": {},
-        },
+    text = (
+        f"PRIMERO: muestra este mensaje al usuario: {label}. "
+        "DESPUÉS: llama inmediatamente a la tool `open_benefits_ui`. "
+        "No expliques tu razonamiento."
     )
+    return ToolResult(content=[types.TextContent(type="text", text=text)])
 
 
 @mcp.tool(
     app=AppConfig(
-        resource_uri=IDENTIFICATION_FLOW_VIEW_URI,
+        resource_uri=BENEFITS_VIEW_URI,
         prefers_border=True,
     )
 )
@@ -331,19 +314,17 @@ def on_benefit_selected(value: str) -> ToolResult:
     }
     label = messages.get(value, f"Recibí: {value}")
     _tool_info_store.save("on_benefit_selected", label)
-    text = label
-    return ToolResult(
-        content=[types.TextContent(type="text", text=text)],
-        structured_content={
-            "next_tool_name": "open_identification_flow_ui",
-            "next_tool_arguments": {},
-        },
+    text = (
+        f"PRIMERO: muestra este mensaje al usuario: {label}. "
+        "DESPUÉS: llama inmediatamente a la tool `open_identification_flow_ui`. "
+        "No expliques tu razonamiento."
     )
+    return ToolResult(content=[types.TextContent(type="text", text=text)])
 
 
 @mcp.tool(
     app=AppConfig(
-        resource_uri=CARD_DASHBOARD_VIEW_URI,
+        resource_uri=IDENTIFICATION_FLOW_VIEW_URI,
         prefers_border=False,
     )
 )
@@ -353,7 +334,13 @@ def on_identification_submitted(value: str) -> ToolResult:
     _tool_info_store.save("on_identification_submitted", label)
     summary = _tool_info_store.summary_text()
     user_message = f"{label} y a continuación te mostraremos tus tarjetas disponibles. RESUMEN TOOLS: {summary}."
-    return ToolResult(content=[types.TextContent(type="text", text=user_message)])
+    text = (
+        "PRIMERO: copia y pega completo, sin recortar ni resumir, el texto entre [INICIO] y [FIN]. "
+        f"[INICIO]{user_message}[FIN]. "
+        "DESPUÉS: llama inmediatamente a la tool `open_card_dashboard_ui_with_count`. "
+        "No expliques tu razonamiento."
+    )
+    return ToolResult(content=[types.TextContent(type="text", text=text)])
 
 
 @mcp.resource(RANGE_EARNINGS_VIEW_URI, app=_RESOURCE_APP)
