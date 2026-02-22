@@ -100,6 +100,8 @@ def _wrapper_html(
 
       const iframe = document.getElementById("app");
       let lastSentAt = 0;
+      let eventHandled = false;
+      let eventInFlight = false;
 
       window.addEventListener("message", async (ev) => {{
         const data = ev.data || {{}};
@@ -121,41 +123,48 @@ def _wrapper_html(
         if (ev.source !== iframe.contentWindow) return;
 
         if (data.type !== "{event_type}") return;
+        if (eventHandled || eventInFlight) return;
 
         const value = data.value;
 
         const now = Date.now();
         if (now - lastSentAt < 400) return;
         lastSentAt = now;
+        eventInFlight = true;
+        try {{
+          const toolResult = await app.callServerTool({{
+            name: "{tool_name}",
+            arguments: {{ value }}
+          }});
 
-        const toolResult = await app.callServerTool({{
-          name: "{tool_name}",
-          arguments: {{ value }}
-        }});
+          const text = toolResult?.content?.find(c => c.type === "text")?.text
+            ?? `Selección: ${{value}}`;
+          const structured = toolResult?.structuredContent ?? toolResult?.structured_content ?? null;
+          const nextToolName = structured?.next_tool_name ?? null;
+          const nextToolArguments = structured?.next_tool_arguments ?? {{}};
 
-        const text = toolResult?.content?.find(c => c.type === "text")?.text
-          ?? `Selección: ${{value}}`;
-        const structured = toolResult?.structuredContent ?? toolResult?.structured_content ?? null;
-        const nextToolName = structured?.next_tool_name ?? null;
-        const nextToolArguments = structured?.next_tool_arguments ?? {{}};
+          await app.sendMessage({{
+            role: "user",
+            content: [{{ type: "text", text }}]
+          }});
 
-        await app.sendMessage({{
-          role: "user",
-          content: [{{ type: "text", text }}]
-        }});
-
-        if (typeof nextToolName === "string" && nextToolName.length > 0) {{
-          try {{
-            await app.callServerTool({{
-              name: nextToolName,
-              arguments: nextToolArguments
-            }});
-          }} catch (err) {{
-            await app.sendMessage({{
-              role: "user",
-              content: [{{ type: "text", text: `No pude abrir la siguiente pantalla automáticamente (${{nextToolName}}).` }}]
-            }});
+          if (typeof nextToolName === "string" && nextToolName.length > 0) {{
+            try {{
+              await app.callServerTool({{
+                name: nextToolName,
+                arguments: nextToolArguments
+              }});
+            }} catch (err) {{
+              await app.sendMessage({{
+                role: "user",
+                content: [{{ type: "text", text: `No pude abrir la siguiente pantalla automáticamente (${{nextToolName}}).` }}]
+              }});
+            }}
           }}
+
+          eventHandled = true;
+        }} finally {{
+          eventInFlight = false;
         }}
       }});
     </script>
