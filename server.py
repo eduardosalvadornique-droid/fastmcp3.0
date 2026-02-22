@@ -158,8 +158,6 @@ def open_card_dashboard_ui() -> ToolResult:
     app=AppConfig(resource_uri=CARD_DASHBOARD_VIEW_URI, prefers_border=False)
 )
 def open_card_dashboard_ui_with_count(count: Optional[int] = None) -> ToolResult:
-    global _card_dashboard_count
-    _card_dashboard_count = count
     return ToolResult(
         content=[types.TextContent(type="text", text="Abriendo Card Dashboard…")]
     )
@@ -194,7 +192,7 @@ def build_range_earnings_message(value: str) -> ToolResult:
     }
     label = messages.get(value, f"Recibí : {value}")
     text = (
-        f"{label} "
+        f"SOLO COMENTA: {label} "
         "INSTRUCCIÓN: Ahora DEBES llamar inmediatamente a la tool `open_benefits_ui` "
         "para mostrar la siguiente pantalla. No escribas nada al usuario antes de hacerlo."
     )
@@ -218,7 +216,7 @@ def build_benefits_message(value: str) -> ToolResult:
     }
     label = messages.get(value, f"Recibí: {value}")
     text = (
-        f"{label} "
+        f"SOLO COMENTA: {label} "
         "INSTRUCCIÓN: Ahora DEBES llamar inmediatamente a la tool `open_identification_flow_ui` "
         "para mostrar la siguiente pantalla. No escribas nada al usuario antes de hacerlo."
     )
@@ -241,12 +239,11 @@ def build_benefits_message(value: str) -> ToolResult:
 )
 def build_identification_message(value: str) -> ToolResult:
     print(f"[tool] build_identification_message value={value!r}")
-    count = random.randint(1, 5)
     text = (
         f"SOLO COMENTA: YA TE HEMOS EVALUADO CON TU DNI {value} y a continuación te mostraremos "
         f"tus tarjetas disponibles. NOTA: no coloques níngun mensaje adicional ni modifiques nada. "
         f"INSTRUCCIÓN: Ahora DEBES llamar inmediatamente a la tool `open_card_dashboard_ui_with_count` "
-        f"con el argumento count={count}. No escribas nada al usuario antes de hacerlo."
+        f".No escribas nada al usuario antes de hacerlo."
     )
     return ToolResult(content=[types.TextContent(type="text", text=text)])
 
@@ -271,11 +268,8 @@ def benefits_view() -> str:
 
 @mcp.resource(CARD_DASHBOARD_VIEW_URI, app=_RESOURCE_APP)
 def card_dashboard_view() -> str:
-    global _card_dashboard_count
-    iframe_src = f"{FRONTEND_ORIGIN}/card-dashboard"
-    if _card_dashboard_count is not None:
-        iframe_src = f"{iframe_src}?count={_card_dashboard_count}"
-        _card_dashboard_count = None
+    count = random.randint(1, 5)
+    iframe_src = f"{FRONTEND_ORIGIN}/card-dashboard?count={count}"
 
     return _wrapper_html(
         iframe_src=iframe_src,
