@@ -15,6 +15,7 @@ FRONTEND_ORIGIN = (
 RANGE_EARNINGS_VIEW_URI = "ui://catalog/range-earnings.html"
 BENEFITS_VIEW_URI = "ui://catalog/benefits.html"
 CARD_DASHBOARD_VIEW_URI = "ui://catalog/card-dashboard.html"
+CARD_DASHBOARD_VIEW_READONLY_URI = "ui://catalog/card-dashboard-readonly.html"
 IDENTIFICATION_FLOW_VIEW_URI = "ui://catalog/identification-flow.html"
 
 @dataclass
@@ -160,9 +161,16 @@ _RESOURCE_APP = AppConfig(
 )
 
 
-@mcp.tool(app=AppConfig(resource_uri=RANGE_EARNINGS_VIEW_URI, prefers_border=True))
+@mcp.tool(
+    app=AppConfig(
+        resource_uri=RANGE_EARNINGS_VIEW_URI,
+        prefers_border=True,
+    )
+)
 def open_range_earnings_ui() -> ToolResult:
-    """Abre la UI para seleccionar un rango salarial (earnings)."""
+    """Abre la UI para seleccionar un rango salarial (earnings).
+    Usar cuando el usuario quiera iniciar solicitud de tarjeta.
+    """
     return ToolResult(
         content=[
             types.TextContent(type="text", text="Abriendo UI de rangos salariales…")
@@ -170,7 +178,32 @@ def open_range_earnings_ui() -> ToolResult:
     )
 
 
-@mcp.tool(app=AppConfig(resource_uri=BENEFITS_VIEW_URI, prefers_border=True))
+@mcp.tool(
+    app=AppConfig(
+        resource_uri=RANGE_EARNINGS_VIEW_URI,
+        prefers_border=True,
+    )
+)
+def start_card_application_flow() -> ToolResult:
+    """Usar cuando la intención sea obtener/conseguir/aplicar a una tarjeta.
+    Esta tool SIEMPRE inicia el flujo en rango salarial.
+    """
+    return ToolResult(
+        content=[
+            types.TextContent(
+                type="text",
+                text="Iniciando flujo de solicitud de tarjeta desde rango salarial…",
+            )
+        ]
+    )
+
+
+@mcp.tool(
+    app=AppConfig(
+        resource_uri=BENEFITS_VIEW_URI,
+        prefers_border=True,
+    )
+)
 def open_benefits_ui() -> ToolResult:
     """Abre la UI para seleccionar el tipo de beneficios (cashback, millas, descuentos, etc)."""
     return ToolResult(
@@ -178,25 +211,59 @@ def open_benefits_ui() -> ToolResult:
     )
 
 
-@mcp.tool(app=AppConfig(resource_uri=CARD_DASHBOARD_VIEW_URI, prefers_border=False))
+@mcp.tool(
+    app=AppConfig(
+        resource_uri=CARD_DASHBOARD_VIEW_URI,
+        prefers_border=False,
+    )
+)
 def open_card_dashboard_ui() -> ToolResult:
-    """Abre la UI que muestra la lista de tarjetas de crédito."""
+    """Tool genérica de tarjetas.
+    Preferencia de uso:
+    - Si el usuario solo quiere ver/explorar tarjetas, usar `open_card_dashboard_ui_readonly`.
+    - Si vienes del flujo evaluado/final, usar `open_card_dashboard_ui_with_count`.
+    """
     return ToolResult(
         content=[types.TextContent(type="text", text="Abriendo Card Dashboard…")]
     )
 
 
 @mcp.tool(
-    app=AppConfig(resource_uri=CARD_DASHBOARD_VIEW_URI, prefers_border=False)
+    app=AppConfig(
+        resource_uri=CARD_DASHBOARD_VIEW_READONLY_URI,
+        prefers_border=False,
+    )
+)
+def open_card_dashboard_ui_readonly() -> ToolResult:
+    """Usar cuando la intención sea ver/explorar tarjetas sin aplicar.
+    Ejemplos: "ver tarjetas", "mostrar tarjetas", "qué tarjetas hay".
+    Esta vista oculta el botón de aplicar.
+    """
+    return ToolResult(
+        content=[types.TextContent(type="text", text="Abriendo Card Dashboard (solo vista)…")]
+    )
+
+
+@mcp.tool(
+    app=AppConfig(
+        resource_uri=CARD_DASHBOARD_VIEW_URI,
+        prefers_border=False,
+    )
 )
 def open_card_dashboard_ui_with_count(count: Optional[int] = None) -> ToolResult:
+    """Usar al final del flujo evaluado/personalizado de identificación.
+    No usar para intención genérica de explorar tarjetas.
+    """
     return ToolResult(
         content=[types.TextContent(type="text", text="Abriendo Card Dashboard…")]
     )
 
 
 @mcp.tool(
-    app=AppConfig(resource_uri=IDENTIFICATION_FLOW_VIEW_URI, prefers_border=True)
+    app=AppConfig(
+        resource_uri=IDENTIFICATION_FLOW_VIEW_URI,
+        prefers_border=True,
+    )
 )
 def open_identification_flow_ui() -> ToolResult:
     """Abre la UI del flujo de identificación del usuario."""
@@ -210,12 +277,11 @@ def open_identification_flow_ui() -> ToolResult:
 @mcp.tool(
     app=AppConfig(
         resource_uri=RANGE_EARNINGS_VIEW_URI,
-        visibility=["app"],
         prefers_border=True,
     )
 )
-def build_range_earnings_message(value: str) -> ToolResult:
-    print(f"[tool] build_range_earnings_message value={value!r}")
+def on_range_selected(value: str) -> ToolResult:
+    print(f"[tool] on_range_selected value={value!r}")
     messages = {
         "lt_1200": "El usuario eligió menos de S/ 1200.",
         "1200_2500": "El usuario eligió S/ 1200 - S/ 2500.",
@@ -223,7 +289,7 @@ def build_range_earnings_message(value: str) -> ToolResult:
         "gt_5000": "El usuario eligió más de S/ 5000.",
     }
     label = messages.get(value, f"Recibí : {value}")
-    _tool_info_store.save("build_range_earnings_message", label)
+    _tool_info_store.save("on_range_selected", label)
     text = (
         f"PRIMERO: muestra este mensaje al usuario: {label}. "
         "DESPUÉS: llama inmediatamente a la tool `open_benefits_ui`. "
@@ -235,12 +301,11 @@ def build_range_earnings_message(value: str) -> ToolResult:
 @mcp.tool(
     app=AppConfig(
         resource_uri=BENEFITS_VIEW_URI,
-        visibility=["app"],
         prefers_border=True,
     )
 )
-def build_benefits_message(value: str) -> ToolResult:
-    print(f"[tool] build_benefits_message value={value!r}")
+def on_benefit_selected(value: str) -> ToolResult:
+    print(f"[tool] on_benefit_selected value={value!r}")
     messages = {
         "cb": "El usuario eligió Cashback.",
         "mv": "El usuario eligió Millas / Viaje.",
@@ -248,7 +313,7 @@ def build_benefits_message(value: str) -> ToolResult:
         "rg": "El usuario eligió Recompensas generales.",
     }
     label = messages.get(value, f"Recibí: {value}")
-    _tool_info_store.save("build_benefits_message", label)
+    _tool_info_store.save("on_benefit_selected", label)
     text = (
         f"PRIMERO: muestra este mensaje al usuario: {label}. "
         "DESPUÉS: llama inmediatamente a la tool `open_identification_flow_ui`. "
@@ -260,14 +325,13 @@ def build_benefits_message(value: str) -> ToolResult:
 @mcp.tool(
     app=AppConfig(
         resource_uri=IDENTIFICATION_FLOW_VIEW_URI,
-        visibility=["app"],
-        prefers_border=True,
+        prefers_border=False,
     )
 )
-def build_identification_message(value: str) -> ToolResult:
-    print(f"[tool] build_identification_message value={value!r}")
+def on_identification_submitted(value: str) -> ToolResult:
+    print(f"[tool] on_identification_submitted value={value!r}")
     label = f"Te hemos evaluado con tu DNI {value}"
-    _tool_info_store.save("build_identification_message", label)
+    _tool_info_store.save("on_identification_submitted", label)
     summary = _tool_info_store.summary_text()
     user_message = f"{label} y a continuación te mostraremos tus tarjetas disponibles. RESUMEN TOOLS: {summary}."
     text = (
@@ -284,7 +348,7 @@ def range_earnings_view() -> str:
     return _wrapper_html(
         iframe_src=f"{FRONTEND_ORIGIN}/range-earings",
         event_type="range_earnings_selected",
-        tool_name="build_range_earnings_message",
+        tool_name="on_range_selected",
         iframe_height="280px",
     )
 
@@ -294,7 +358,7 @@ def benefits_view() -> str:
     return _wrapper_html(
         iframe_src=f"{FRONTEND_ORIGIN}/benefit-options",
         event_type="benefits_selected",
-        tool_name="build_benefits_message",
+        tool_name="on_benefit_selected",
         iframe_height="280px",
     )
 
@@ -311,18 +375,27 @@ def card_dashboard_view() -> str:
         iframe_height="420px",
     )
 
+
+@mcp.resource(CARD_DASHBOARD_VIEW_READONLY_URI, app=_RESOURCE_APP)
+def card_dashboard_readonly_view() -> str:
+    iframe_src = f"{FRONTEND_ORIGIN}/card-dashboard?hideApplyButton=true"
+
+    return _wrapper_html(
+        iframe_src=iframe_src,
+        event_type="open_link",
+        tool_name="unknown",
+        iframe_height="420px",
+    )
+
+
 @mcp.resource(IDENTIFICATION_FLOW_VIEW_URI, app=_RESOURCE_APP)
 def identification_flow_view() -> str:
     return _wrapper_html(
         iframe_src=f"{FRONTEND_ORIGIN}/identification-flow",
         event_type="identification_send_data",
-        tool_name="build_identification_message",
+        tool_name="on_identification_submitted",
         iframe_height="280px",
     )
-
-@mcp.tool(app=AppConfig(resource_uri=RANGE_EARNINGS_VIEW_URI, prefers_border=True))
-def open_ui() -> ToolResult:
-    return open_range_earnings_ui()
 
 if __name__ == "__main__":
     mcp.run()

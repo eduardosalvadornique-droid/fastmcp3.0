@@ -1,5 +1,6 @@
 from fastmcp import FastMCP
 from fastmcp.server.apps import AppConfig, ResourceCSP, ResourcePermissions
+from fastmcp.server.context import Context
 from fastmcp.tools import ToolResult
 from mcp import types
 from dataclasses import dataclass
@@ -44,6 +45,21 @@ class ToolInfoStore:
 
 
 _tool_info_store = ToolInfoStore()
+_FLOW_STATE_KEY = "card_flow_step"
+_FLOW_OPEN_TOOLS = {
+    "open_benefits_ui",
+    "open_identification_flow_ui",
+    "open_card_dashboard_ui_with_count",
+}
+
+
+async def _set_flow_step(
+    ctx: Context, *, step: str, next_open_tool: Optional[str] = None
+) -> None:
+    await ctx.set_state(_FLOW_STATE_KEY, step)
+    await ctx.disable_components(names=_FLOW_OPEN_TOOLS, components={"tool"})
+    if next_open_tool:
+        await ctx.enable_components(names={next_open_tool}, components={"tool"})
 
 
 def _wrapper_html(
@@ -136,12 +152,27 @@ def _wrapper_html(
         const text = toolResult?.content?.find(c => c.type === "text")?.text
           ?? `Selección: ${{value}}`;
         const structured = toolResult?.structuredContent ?? toolResult?.structured_content ?? null;
-        const nextUiUri = structured?.next_ui_uri;
+        const nextToolName = structured?.next_tool_name ?? null;
+        const nextToolArguments = structured?.next_tool_arguments ?? {{}};
 
         await app.sendMessage({{
           role: "user",
           content: [{{ type: "text", text }}]
         }});
+
+        if (typeof nextToolName === "string" && nextToolName.length > 0) {{
+          try {{
+            await app.callServerTool({{
+              name: nextToolName,
+              arguments: nextToolArguments
+            }});
+          }} catch (err) {{
+            await app.sendMessage({{
+              role: "user",
+              content: [{{ type: "text", text: `No pude abrir la siguiente pantalla automáticamente (${{nextToolName}}).` }}]
+            }});
+          }}
+        }}
       }});
     </script>
   </body>
@@ -167,10 +198,11 @@ _RESOURCE_APP = AppConfig(
         prefers_border=True,
     )
 )
-def open_range_earnings_ui() -> ToolResult:
+async def open_range_earnings_ui(ctx: Context) -> ToolResult:
     """Abre la UI para seleccionar un rango salarial (earnings).
     Usar cuando el usuario quiera iniciar solicitud de tarjeta.
     """
+    await _set_flow_step(ctx, step="range_shown", next_open_tool=None)
     return ToolResult(
         content=[
             types.TextContent(type="text", text="Abriendo UI de rangos salariales…")
@@ -184,10 +216,11 @@ def open_range_earnings_ui() -> ToolResult:
         prefers_border=True,
     )
 )
-def start_card_application_flow() -> ToolResult:
+async def start_card_application_flow(ctx: Context) -> ToolResult:
     """Usar cuando la intención sea obtener/conseguir/aplicar a una tarjeta.
     Esta tool SIEMPRE inicia el flujo en rango salarial.
     """
+    await _set_flow_step(ctx, step="range_shown", next_open_tool=None)
     return ToolResult(
         content=[
             types.TextContent(
@@ -280,7 +313,7 @@ def open_identification_flow_ui() -> ToolResult:
         prefers_border=True,
     )
 )
-def on_range_selected(value: str) -> ToolResult:
+async def on_range_selected(value: str, ctx: Context) -> ToolResult:
     print(f"[tool] on_range_selected value={value!r}")
     messages = {
         "lt_1200": "El usuario eligió menos de S/ 1200.",
@@ -290,12 +323,19 @@ def on_range_selected(value: str) -> ToolResult:
     }
     label = messages.get(value, f"Recibí : {value}")
     _tool_info_store.save("on_range_selected", label)
-    text = (
-        f"PRIMERO: muestra este mensaje al usuario: {label}. "
-        "DESPUÉS: llama inmediatamente a la tool `open_benefits_ui`. "
-        "No expliques tu razonamiento."
+    await _set_flow_step(
+        ctx,
+        step="range_selected",
+        next_open_tool="open_benefits_ui",
     )
-    return ToolResult(content=[types.TextContent(type="text", text=text)])
+    text = label
+    return ToolResult(
+        content=[types.TextContent(type="text", text=text)],
+        structured_content={
+            "next_tool_name": "open_benefits_ui",
+            "next_tool_arguments": {},
+        },
+    )
 
 
 @mcp.tool(
@@ -304,7 +344,7 @@ def on_range_selected(value: str) -> ToolResult:
         prefers_border=True,
     )
 )
-def on_benefit_selected(value: str) -> ToolResult:
+async def on_benefit_selected(value: str, ctx: Context) -> ToolResult:
     print(f"[tool] on_benefit_selected value={value!r}")
     messages = {
         "cb": "El usuario eligió Cashback.",
@@ -314,12 +354,19 @@ def on_benefit_selected(value: str) -> ToolResult:
     }
     label = messages.get(value, f"Recibí: {value}")
     _tool_info_store.save("on_benefit_selected", label)
-    text = (
-        f"PRIMERO: muestra este mensaje al usuario: {label}. "
-        "DESPUÉS: llama inmediatamente a la tool `open_identification_flow_ui`. "
-        "No expliques tu razonamiento."
+    await _set_flow_step(
+        ctx,
+        step="benefit_selected",
+        next_open_tool="open_identification_flow_ui",
     )
-    return ToolResult(content=[types.TextContent(type="text", text=text)])
+    text = label
+    return ToolResult(
+        content=[types.TextContent(type="text", text=text)],
+        structured_content={
+            "next_tool_name": "open_identification_flow_ui",
+            "next_tool_arguments": {},
+        },
+    )
 
 
 @mcp.tool(
@@ -328,19 +375,25 @@ def on_benefit_selected(value: str) -> ToolResult:
         prefers_border=False,
     )
 )
-def on_identification_submitted(value: str) -> ToolResult:
+async def on_identification_submitted(value: str, ctx: Context) -> ToolResult:
     print(f"[tool] on_identification_submitted value={value!r}")
     label = f"Te hemos evaluado con tu DNI {value}"
     _tool_info_store.save("on_identification_submitted", label)
+    await _set_flow_step(
+        ctx,
+        step="identification_submitted",
+        next_open_tool="open_card_dashboard_ui_with_count",
+    )
     summary = _tool_info_store.summary_text()
     user_message = f"{label} y a continuación te mostraremos tus tarjetas disponibles. RESUMEN TOOLS: {summary}."
-    text = (
-        "PRIMERO: copia y pega completo, sin recortar ni resumir, el texto entre [INICIO] y [FIN]. "
-        f"[INICIO]{user_message}[FIN]. "
-        "DESPUÉS: llama inmediatamente a la tool `open_card_dashboard_ui_with_count`. "
-        "No expliques tu razonamiento."
+    text = user_message
+    return ToolResult(
+        content=[types.TextContent(type="text", text=text)],
+        structured_content={
+            "next_tool_name": "open_card_dashboard_ui_with_count",
+            "next_tool_arguments": {},
+        },
     )
-    return ToolResult(content=[types.TextContent(type="text", text=text)])
 
 
 @mcp.resource(RANGE_EARNINGS_VIEW_URI, app=_RESOURCE_APP)
