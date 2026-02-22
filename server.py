@@ -244,7 +244,7 @@ def build_benefits_message(value: str) -> ToolResult:
 )
 def build_identification_message(value: str) -> ToolResult:
     print(f"[tool] build_identification_message value={value!r}")
-    label = f"YA TE HEMOS EVALUADO CON TU DNI {value}"
+    label = f"Te hemos evaluado con tu DNI {value}"
     _store_tool_data("build_identification_message", label)
     summary = " | ".join(
         f"{tool}: label={data['label']}; mensaje_fijo={data['mensaje_fijo']}"
@@ -252,7 +252,8 @@ def build_identification_message(value: str) -> ToolResult:
     )
     user_message = f"{label} y a continuación te mostraremos tus tarjetas disponibles. RESUMEN TOOLS: {summary}."
     text = (
-        f"PRIMERO: muestra este mensaje al usuario: {user_message}. "
+        "PRIMERO: copia y pega completo, sin recortar ni resumir, el texto entre [INICIO] y [FIN]. "
+        f"[INICIO]{user_message}[FIN]. "
         "DESPUÉS: llama inmediatamente a la tool `open_card_dashboard_ui_with_count`. "
         "No expliques tu razonamiento."
     )
