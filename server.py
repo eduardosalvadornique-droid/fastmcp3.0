@@ -2,6 +2,7 @@ from fastmcp import FastMCP
 from fastmcp.server.apps import AppConfig, ResourceCSP, ResourcePermissions
 from fastmcp.tools import ToolResult
 from mcp import types
+from dataclasses import dataclass
 from typing import Optional
 import random
 
@@ -16,16 +17,34 @@ BENEFITS_VIEW_URI = "ui://catalog/benefits.html"
 CARD_DASHBOARD_VIEW_URI = "ui://catalog/card-dashboard.html"
 IDENTIFICATION_FLOW_VIEW_URI = "ui://catalog/identification-flow.html"
 _card_dashboard_count: Optional[int] = None
-_app_tool_data: dict[str, dict[str, str]] = {}
 
 
-def _store_tool_data(tool_name: str, label: str) -> dict[str, str]:
-    entry = {
-        "label": label,
-        "mensaje_fijo": f"{tool_name}_{random.randint(1, 5)}",
-    }
-    _app_tool_data[tool_name] = entry
-    return entry
+@dataclass
+class ToolInfo:
+    label: str
+    mensaje_fijo: str
+
+
+class ToolInfoStore:
+    def __init__(self) -> None:
+        self._data: dict[str, ToolInfo] = {}
+
+    def save(self, tool_name: str, label: str) -> ToolInfo:
+        tool_info = ToolInfo(
+            label=label,
+            mensaje_fijo=f"{tool_name}_{random.randint(1, 5)}",
+        )
+        self._data[tool_name] = tool_info
+        return tool_info
+
+    def summary_text(self) -> str:
+        return " | ".join(
+            f"{tool_name}: label={tool_info.label}; mensaje_fijo={tool_info.mensaje_fijo}"
+            for tool_name, tool_info in self._data.items()
+        )
+
+
+_tool_info_store = ToolInfoStore()
 
 
 def _wrapper_html(
@@ -33,6 +52,7 @@ def _wrapper_html(
         iframe_src: str,
         event_type: Optional[str] = None,
         tool_name: Optional[str] = None,
+        iframe_height: str = "460px",
 ) -> str:
         
         return f"""<!doctype html>
@@ -45,29 +65,33 @@ def _wrapper_html(
         margin: 0;
         padding: 0;
         width: 100%;
-        height: 100%;
+        height: auto;
         overflow: hidden;
         background: transparent;
       }}
 
-      /* Fullscreen dentro del webview */
+      #iframe-container {{
+        width: 100%;
+        height: {iframe_height};
+      }}
+
       iframe {{
-        position: fixed;
-        inset: 0;
-        width: 100vw;
-        height: 100vh;
+        width: 100%;
+        height: 100%;
         border: 0;
         display: block;
       }}
     </style>
   </head>
   <body>
-    <iframe
-      id="app"
-      src="{iframe_src}"
-      allow="camera; microphone; clipboard-read; clipboard-write; fullscreen"
-      referrerpolicy="strict-origin-when-cross-origin"
-    ></iframe>
+    <div id="iframe-container">
+      <iframe
+        id="app"
+        src="{iframe_src}"
+        allow="camera; microphone; clipboard-read; clipboard-write; fullscreen"
+        referrerpolicy="strict-origin-when-cross-origin"
+      ></iframe>
+    </div>
 
     <script type=\"module\">
       import {{ App }} from "https://unpkg.com/@modelcontextprotocol/ext-apps@0.4.0/app-with-deps";
@@ -201,7 +225,7 @@ def build_range_earnings_message(value: str) -> ToolResult:
         "gt_5000": "El usuario eligió más de S/ 5000.",
     }
     label = messages.get(value, f"Recibí : {value}")
-    _store_tool_data("build_range_earnings_message", label)
+    _tool_info_store.save("build_range_earnings_message", label)
     text = (
         f"PRIMERO: muestra este mensaje al usuario: {label}. "
         "DESPUÉS: llama inmediatamente a la tool `open_benefits_ui`. "
@@ -226,7 +250,7 @@ def build_benefits_message(value: str) -> ToolResult:
         "rg": "El usuario eligió Recompensas generales.",
     }
     label = messages.get(value, f"Recibí: {value}")
-    _store_tool_data("build_benefits_message", label)
+    _tool_info_store.save("build_benefits_message", label)
     text = (
         f"PRIMERO: muestra este mensaje al usuario: {label}. "
         "DESPUÉS: llama inmediatamente a la tool `open_identification_flow_ui`. "
@@ -245,11 +269,8 @@ def build_benefits_message(value: str) -> ToolResult:
 def build_identification_message(value: str) -> ToolResult:
     print(f"[tool] build_identification_message value={value!r}")
     label = f"Te hemos evaluado con tu DNI {value}"
-    _store_tool_data("build_identification_message", label)
-    summary = " | ".join(
-        f"{tool}: label={data['label']}; mensaje_fijo={data['mensaje_fijo']}"
-        for tool, data in _app_tool_data.items()
-    )
+    _tool_info_store.save("build_identification_message", label)
+    summary = _tool_info_store.summary_text()
     user_message = f"{label} y a continuación te mostraremos tus tarjetas disponibles. RESUMEN TOOLS: {summary}."
     text = (
         "PRIMERO: copia y pega completo, sin recortar ni resumir, el texto entre [INICIO] y [FIN]. "
@@ -266,6 +287,7 @@ def range_earnings_view() -> str:
         iframe_src=f"{FRONTEND_ORIGIN}/range-earings",
         event_type="range_earnings_selected",
         tool_name="build_range_earnings_message",
+        iframe_height="420px",
     )
 
 
@@ -275,6 +297,7 @@ def benefits_view() -> str:
         iframe_src=f"{FRONTEND_ORIGIN}/benefit-options",
         event_type="benefits_selected",
         tool_name="build_benefits_message",
+        iframe_height="420px",
     )
 
 
@@ -287,6 +310,7 @@ def card_dashboard_view() -> str:
         iframe_src=iframe_src,
         event_type="open_link",
         tool_name="unknown",
+        iframe_height="680px",
     )
 
 @mcp.resource(IDENTIFICATION_FLOW_VIEW_URI, app=_RESOURCE_APP)
@@ -295,6 +319,7 @@ def identification_flow_view() -> str:
         iframe_src=f"{FRONTEND_ORIGIN}/identification-flow",
         event_type="identification_send_data",
         tool_name="build_identification_message",
+        iframe_height="520px",
     )
 
 @mcp.tool(app=AppConfig(resource_uri=RANGE_EARNINGS_VIEW_URI, prefers_border=True))
