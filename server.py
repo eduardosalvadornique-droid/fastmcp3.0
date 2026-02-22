@@ -71,7 +71,7 @@ def _wrapper_html(
 
       #iframe-container {{
         width: 100%;
-        min-height: {iframe_height};
+        height: {iframe_height};
       }}
 
       iframe {{
@@ -291,10 +291,9 @@ def on_range_selected(value: str) -> ToolResult:
     label = messages.get(value, f"Recibí : {value}")
     _tool_info_store.save("on_range_selected", label)
     text = (
-        f"MENSAJE_USUARIO: {label}\n"
-        "ACCION: llama ahora la tool `open_benefits_ui`.\n"
-        "OBLIGATORIO: primero muestra MENSAJE_USUARIO al usuario y luego ejecuta ACCION. "
-        "No agregues explicaciones."
+        f"PRIMERO: muestra este mensaje al usuario: {label}. "
+        "DESPUÉS: llama inmediatamente a la tool `open_benefits_ui`. "
+        "No expliques tu razonamiento."
     )
     return ToolResult(content=[types.TextContent(type="text", text=text)])
 
@@ -316,10 +315,9 @@ def on_benefit_selected(value: str) -> ToolResult:
     label = messages.get(value, f"Recibí: {value}")
     _tool_info_store.save("on_benefit_selected", label)
     text = (
-        f"MENSAJE_USUARIO: {label}\n"
-        "ACCION: llama ahora la tool `open_identification_flow_ui`.\n"
-        "OBLIGATORIO: primero muestra MENSAJE_USUARIO al usuario y luego ejecuta ACCION. "
-        "No agregues explicaciones."
+        f"PRIMERO: muestra este mensaje al usuario: {label}. "
+        "DESPUÉS: llama inmediatamente a la tool `open_identification_flow_ui`. "
+        "No expliques tu razonamiento."
     )
     return ToolResult(content=[types.TextContent(type="text", text=text)])
 
@@ -337,10 +335,10 @@ def on_identification_submitted(value: str) -> ToolResult:
     summary = _tool_info_store.summary_text()
     user_message = f"{label} y a continuación te mostraremos tus tarjetas disponibles. RESUMEN TOOLS: {summary}."
     text = (
-        f"MENSAJE_USUARIO: {user_message}\n"
-        "ACCION: llama ahora la tool `open_card_dashboard_ui_with_count`.\n"
-        "OBLIGATORIO: primero muestra MENSAJE_USUARIO al usuario y luego ejecuta ACCION. "
-        "No agregues explicaciones."
+        "PRIMERO: copia y pega completo, sin recortar ni resumir, el texto entre [INICIO] y [FIN]. "
+        f"[INICIO]{user_message}[FIN]. "
+        "DESPUÉS: llama inmediatamente a la tool `open_card_dashboard_ui_with_count`. "
+        "No expliques tu razonamiento."
     )
     return ToolResult(content=[types.TextContent(type="text", text=text)])
 
