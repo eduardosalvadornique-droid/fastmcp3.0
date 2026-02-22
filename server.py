@@ -15,6 +15,7 @@ FRONTEND_ORIGIN = (
 RANGE_EARNINGS_VIEW_URI = "ui://catalog/range-earnings.html"
 BENEFITS_VIEW_URI = "ui://catalog/benefits.html"
 CARD_DASHBOARD_VIEW_URI = "ui://catalog/card-dashboard.html"
+CARD_DASHBOARD_VIEW_READONLY_URI = "ui://catalog/card-dashboard-readonly.html"
 IDENTIFICATION_FLOW_VIEW_URI = "ui://catalog/identification-flow.html"
 
 @dataclass
@@ -180,9 +181,26 @@ def open_benefits_ui() -> ToolResult:
 
 @mcp.tool(app=AppConfig(resource_uri=CARD_DASHBOARD_VIEW_URI, prefers_border=False))
 def open_card_dashboard_ui() -> ToolResult:
-    """Abre la UI que muestra la lista de tarjetas de crédito."""
+    """Tool genérica de tarjetas.
+    Preferencia de uso:
+    - Si el usuario solo quiere ver/explorar tarjetas, usar `open_card_dashboard_ui_readonly`.
+    - Si vienes del flujo evaluado/final, usar `open_card_dashboard_ui_with_count`.
+    """
     return ToolResult(
         content=[types.TextContent(type="text", text="Abriendo Card Dashboard…")]
+    )
+
+
+@mcp.tool(
+    app=AppConfig(resource_uri=CARD_DASHBOARD_VIEW_READONLY_URI, prefers_border=False)
+)
+def open_card_dashboard_ui_readonly() -> ToolResult:
+    """Usar cuando la intención sea ver/explorar tarjetas sin aplicar.
+    Ejemplos: "ver tarjetas", "mostrar tarjetas", "qué tarjetas hay".
+    Esta vista oculta el botón de aplicar.
+    """
+    return ToolResult(
+        content=[types.TextContent(type="text", text="Abriendo Card Dashboard (solo vista)…")]
     )
 
 
@@ -190,6 +208,9 @@ def open_card_dashboard_ui() -> ToolResult:
     app=AppConfig(resource_uri=CARD_DASHBOARD_VIEW_URI, prefers_border=False)
 )
 def open_card_dashboard_ui_with_count(count: Optional[int] = None) -> ToolResult:
+    """Usar al final del flujo evaluado/personalizado de identificación.
+    No usar para intención genérica de explorar tarjetas.
+    """
     return ToolResult(
         content=[types.TextContent(type="text", text="Abriendo Card Dashboard…")]
     )
@@ -311,6 +332,19 @@ def card_dashboard_view() -> str:
         iframe_height="420px",
     )
 
+
+@mcp.resource(CARD_DASHBOARD_VIEW_READONLY_URI, app=_RESOURCE_APP)
+def card_dashboard_readonly_view() -> str:
+    iframe_src = f"{FRONTEND_ORIGIN}/card-dashboard?hideApplyButton=true"
+
+    return _wrapper_html(
+        iframe_src=iframe_src,
+        event_type="open_link",
+        tool_name="unknown",
+        iframe_height="420px",
+    )
+
+
 @mcp.resource(IDENTIFICATION_FLOW_VIEW_URI, app=_RESOURCE_APP)
 def identification_flow_view() -> str:
     return _wrapper_html(
@@ -319,10 +353,6 @@ def identification_flow_view() -> str:
         tool_name="build_identification_message",
         iframe_height="280px",
     )
-
-@mcp.tool(app=AppConfig(resource_uri=RANGE_EARNINGS_VIEW_URI, prefers_border=True))
-def open_ui() -> ToolResult:
-    return open_range_earnings_ui()
 
 if __name__ == "__main__":
     mcp.run()

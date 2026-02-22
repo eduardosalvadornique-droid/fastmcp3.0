@@ -16,8 +16,6 @@ RANGE_EARNINGS_VIEW_URI = "ui://catalog/range-earnings.html"
 BENEFITS_VIEW_URI = "ui://catalog/benefits.html"
 CARD_DASHBOARD_VIEW_URI = "ui://catalog/card-dashboard.html"
 IDENTIFICATION_FLOW_VIEW_URI = "ui://catalog/identification-flow.html"
-_card_dashboard_count: Optional[int] = None
-
 
 @dataclass
 class ToolInfo:
