@@ -161,9 +161,17 @@ _RESOURCE_APP = AppConfig(
 )
 
 
-@mcp.tool(app=AppConfig(resource_uri=RANGE_EARNINGS_VIEW_URI, prefers_border=True))
+@mcp.tool(
+    app=AppConfig(
+        resource_uri=RANGE_EARNINGS_VIEW_URI,
+        visibility=["app"],
+        prefers_border=True,
+    )
+)
 def open_range_earnings_ui() -> ToolResult:
-    """Abre la UI para seleccionar un rango salarial (earnings)."""
+    """Abre la UI para seleccionar un rango salarial (earnings).
+    Usar cuando el usuario quiera iniciar solicitud de tarjeta.
+    """
     return ToolResult(
         content=[
             types.TextContent(type="text", text="Abriendo UI de rangos salariales…")
@@ -171,7 +179,34 @@ def open_range_earnings_ui() -> ToolResult:
     )
 
 
-@mcp.tool(app=AppConfig(resource_uri=BENEFITS_VIEW_URI, prefers_border=True))
+@mcp.tool(
+    app=AppConfig(
+        resource_uri=RANGE_EARNINGS_VIEW_URI,
+        visibility=["app"],
+        prefers_border=True,
+    )
+)
+def start_card_application_flow() -> ToolResult:
+    """Usar cuando la intención sea obtener/conseguir/aplicar a una tarjeta.
+    Esta tool SIEMPRE inicia el flujo en rango salarial.
+    """
+    return ToolResult(
+        content=[
+            types.TextContent(
+                type="text",
+                text="Iniciando flujo de solicitud de tarjeta desde rango salarial…",
+            )
+        ]
+    )
+
+
+@mcp.tool(
+    app=AppConfig(
+        resource_uri=BENEFITS_VIEW_URI,
+        visibility=["app"],
+        prefers_border=True,
+    )
+)
 def open_benefits_ui() -> ToolResult:
     """Abre la UI para seleccionar el tipo de beneficios (cashback, millas, descuentos, etc)."""
     return ToolResult(
@@ -179,7 +214,13 @@ def open_benefits_ui() -> ToolResult:
     )
 
 
-@mcp.tool(app=AppConfig(resource_uri=CARD_DASHBOARD_VIEW_URI, prefers_border=False))
+@mcp.tool(
+    app=AppConfig(
+        resource_uri=CARD_DASHBOARD_VIEW_URI,
+        visibility=["app"],
+        prefers_border=False,
+    )
+)
 def open_card_dashboard_ui() -> ToolResult:
     """Tool genérica de tarjetas.
     Preferencia de uso:
@@ -192,7 +233,11 @@ def open_card_dashboard_ui() -> ToolResult:
 
 
 @mcp.tool(
-    app=AppConfig(resource_uri=CARD_DASHBOARD_VIEW_READONLY_URI, prefers_border=False)
+    app=AppConfig(
+        resource_uri=CARD_DASHBOARD_VIEW_READONLY_URI,
+        visibility=["app"],
+        prefers_border=False,
+    )
 )
 def open_card_dashboard_ui_readonly() -> ToolResult:
     """Usar cuando la intención sea ver/explorar tarjetas sin aplicar.
@@ -205,7 +250,11 @@ def open_card_dashboard_ui_readonly() -> ToolResult:
 
 
 @mcp.tool(
-    app=AppConfig(resource_uri=CARD_DASHBOARD_VIEW_URI, prefers_border=False)
+    app=AppConfig(
+        resource_uri=CARD_DASHBOARD_VIEW_URI,
+        visibility=["app"],
+        prefers_border=False,
+    )
 )
 def open_card_dashboard_ui_with_count(count: Optional[int] = None) -> ToolResult:
     """Usar al final del flujo evaluado/personalizado de identificación.
@@ -217,7 +266,11 @@ def open_card_dashboard_ui_with_count(count: Optional[int] = None) -> ToolResult
 
 
 @mcp.tool(
-    app=AppConfig(resource_uri=IDENTIFICATION_FLOW_VIEW_URI, prefers_border=True)
+    app=AppConfig(
+        resource_uri=IDENTIFICATION_FLOW_VIEW_URI,
+        visibility=["app"],
+        prefers_border=True,
+    )
 )
 def open_identification_flow_ui() -> ToolResult:
     """Abre la UI del flujo de identificación del usuario."""
