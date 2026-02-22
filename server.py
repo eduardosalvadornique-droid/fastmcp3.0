@@ -309,7 +309,7 @@ def open_identification_flow_ui() -> ToolResult:
 
 @mcp.tool(
     app=AppConfig(
-        resource_uri=RANGE_EARNINGS_VIEW_URI,
+        resource_uri=BENEFITS_VIEW_URI,
         prefers_border=True,
     )
 )
@@ -340,7 +340,7 @@ async def on_range_selected(value: str, ctx: Context) -> ToolResult:
 
 @mcp.tool(
     app=AppConfig(
-        resource_uri=BENEFITS_VIEW_URI,
+        resource_uri=IDENTIFICATION_FLOW_VIEW_URI,
         prefers_border=True,
     )
 )
@@ -371,7 +371,7 @@ async def on_benefit_selected(value: str, ctx: Context) -> ToolResult:
 
 @mcp.tool(
     app=AppConfig(
-        resource_uri=IDENTIFICATION_FLOW_VIEW_URI,
+        resource_uri=CARD_DASHBOARD_VIEW_URI,
         prefers_border=False,
     )
 )
