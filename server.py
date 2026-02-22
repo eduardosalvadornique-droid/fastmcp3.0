@@ -230,13 +230,13 @@ def open_identification_flow_ui() -> ToolResult:
 
 @mcp.tool(
     app=AppConfig(
-        resource_uri=RANGE_EARNINGS_VIEW_URI,
+        resource_uri=BENEFITS_VIEW_URI,
         visibility=["app"],
         prefers_border=True,
     )
 )
-def build_range_earnings_message(value: str) -> ToolResult:
-    print(f"[tool] build_range_earnings_message value={value!r}")
+def on_range_selected(value: str) -> ToolResult:
+    print(f"[tool] on_range_selected value={value!r}")
     messages = {
         "lt_1200": "El usuario eligió menos de S/ 1200.",
         "1200_2500": "El usuario eligió S/ 1200 - S/ 2500.",
@@ -244,38 +244,8 @@ def build_range_earnings_message(value: str) -> ToolResult:
         "gt_5000": "El usuario eligió más de S/ 5000.",
     }
     label = messages.get(value, f"Recibí : {value}")
-    _tool_info_store.save("build_range_earnings_message", label)
-    text = (
-        f"PRIMERO: muestra este mensaje al usuario: {label}. "
-        "DESPUÉS: llama inmediatamente a la tool `open_benefits_ui`. "
-        "No expliques tu razonamiento."
-    )
-    return ToolResult(content=[types.TextContent(type="text", text=text)])
-
-
-@mcp.tool(
-    app=AppConfig(
-        resource_uri=BENEFITS_VIEW_URI,
-        visibility=["app"],
-        prefers_border=True,
-    )
-)
-def build_benefits_message(value: str) -> ToolResult:
-    print(f"[tool] build_benefits_message value={value!r}")
-    messages = {
-        "cb": "El usuario eligió Cashback.",
-        "mv": "El usuario eligió Millas / Viaje.",
-        "dl": "El usuario eligió Descuentos locales.",
-        "rg": "El usuario eligió Recompensas generales.",
-    }
-    label = messages.get(value, f"Recibí: {value}")
-    _tool_info_store.save("build_benefits_message", label)
-    text = (
-        f"PRIMERO: muestra este mensaje al usuario: {label}. "
-        "DESPUÉS: llama inmediatamente a la tool `open_identification_flow_ui`. "
-        "No expliques tu razonamiento."
-    )
-    return ToolResult(content=[types.TextContent(type="text", text=text)])
+    _tool_info_store.save("on_range_selected", label)
+    return ToolResult(content=[types.TextContent(type="text", text=label)])
 
 
 @mcp.tool(
@@ -285,19 +255,33 @@ def build_benefits_message(value: str) -> ToolResult:
         prefers_border=True,
     )
 )
-def build_identification_message(value: str) -> ToolResult:
-    print(f"[tool] build_identification_message value={value!r}")
+def on_benefit_selected(value: str) -> ToolResult:
+    print(f"[tool] on_benefit_selected value={value!r}")
+    messages = {
+        "cb": "El usuario eligió Cashback.",
+        "mv": "El usuario eligió Millas / Viaje.",
+        "dl": "El usuario eligió Descuentos locales.",
+        "rg": "El usuario eligió Recompensas generales.",
+    }
+    label = messages.get(value, f"Recibí: {value}")
+    _tool_info_store.save("on_benefit_selected", label)
+    return ToolResult(content=[types.TextContent(type="text", text=label)])
+
+
+@mcp.tool(
+    app=AppConfig(
+        resource_uri=CARD_DASHBOARD_VIEW_URI,
+        visibility=["app"],
+        prefers_border=False,
+    )
+)
+def on_identification_submitted(value: str) -> ToolResult:
+    print(f"[tool] on_identification_submitted value={value!r}")
     label = f"Te hemos evaluado con tu DNI {value}"
-    _tool_info_store.save("build_identification_message", label)
+    _tool_info_store.save("on_identification_submitted", label)
     summary = _tool_info_store.summary_text()
     user_message = f"{label} y a continuación te mostraremos tus tarjetas disponibles. RESUMEN TOOLS: {summary}."
-    text = (
-        "PRIMERO: copia y pega completo, sin recortar ni resumir, el texto entre [INICIO] y [FIN]. "
-        f"[INICIO]{user_message}[FIN]. "
-        "DESPUÉS: llama inmediatamente a la tool `open_card_dashboard_ui_with_count`. "
-        "No expliques tu razonamiento."
-    )
-    return ToolResult(content=[types.TextContent(type="text", text=text)])
+    return ToolResult(content=[types.TextContent(type="text", text=user_message)])
 
 
 @mcp.resource(RANGE_EARNINGS_VIEW_URI, app=_RESOURCE_APP)
@@ -305,7 +289,7 @@ def range_earnings_view() -> str:
     return _wrapper_html(
         iframe_src=f"{FRONTEND_ORIGIN}/range-earings",
         event_type="range_earnings_selected",
-        tool_name="build_range_earnings_message",
+        tool_name="on_range_selected",
         iframe_height="280px",
     )
 
@@ -315,7 +299,7 @@ def benefits_view() -> str:
     return _wrapper_html(
         iframe_src=f"{FRONTEND_ORIGIN}/benefit-options",
         event_type="benefits_selected",
-        tool_name="build_benefits_message",
+        tool_name="on_benefit_selected",
         iframe_height="280px",
     )
 
@@ -350,7 +334,7 @@ def identification_flow_view() -> str:
     return _wrapper_html(
         iframe_src=f"{FRONTEND_ORIGIN}/identification-flow",
         event_type="identification_send_data",
-        tool_name="build_identification_message",
+        tool_name="on_identification_submitted",
         iframe_height="280px",
     )
 
