@@ -71,7 +71,7 @@ def _wrapper_html(
 
       #iframe-container {{
         width: 100%;
-        height: {iframe_height};
+        min-height: {iframe_height};
       }}
 
       iframe {{
@@ -291,9 +291,10 @@ def on_range_selected(value: str) -> ToolResult:
     label = messages.get(value, f"Recibí : {value}")
     _tool_info_store.save("on_range_selected", label)
     text = (
-        f"Seleccionaste: {label}.\n"
-        "INSTRUCCION OBLIGATORIA: llama ahora la tool `open_benefits_ui`.\n"
-        "No agregues explicaciones ni texto adicional."
+        f"MENSAJE_USUARIO: {label}\n"
+        "ACCION: llama ahora la tool `open_benefits_ui`.\n"
+        "OBLIGATORIO: primero muestra MENSAJE_USUARIO al usuario y luego ejecuta ACCION. "
+        "No agregues explicaciones."
     )
     return ToolResult(content=[types.TextContent(type="text", text=text)])
 
@@ -315,9 +316,10 @@ def on_benefit_selected(value: str) -> ToolResult:
     label = messages.get(value, f"Recibí: {value}")
     _tool_info_store.save("on_benefit_selected", label)
     text = (
-        f"Seleccionaste: {label}.\n"
-        "INSTRUCCION OBLIGATORIA: llama ahora la tool `open_identification_flow_ui`.\n"
-        "No agregues explicaciones ni texto adicional."
+        f"MENSAJE_USUARIO: {label}\n"
+        "ACCION: llama ahora la tool `open_identification_flow_ui`.\n"
+        "OBLIGATORIO: primero muestra MENSAJE_USUARIO al usuario y luego ejecuta ACCION. "
+        "No agregues explicaciones."
     )
     return ToolResult(content=[types.TextContent(type="text", text=text)])
 
@@ -335,9 +337,10 @@ def on_identification_submitted(value: str) -> ToolResult:
     summary = _tool_info_store.summary_text()
     user_message = f"{label} y a continuación te mostraremos tus tarjetas disponibles. RESUMEN TOOLS: {summary}."
     text = (
-        f"{user_message}\n"
-        "INSTRUCCION OBLIGATORIA: llama ahora la tool `open_card_dashboard_ui_with_count`.\n"
-        "No agregues explicaciones ni texto adicional."
+        f"MENSAJE_USUARIO: {user_message}\n"
+        "ACCION: llama ahora la tool `open_card_dashboard_ui_with_count`.\n"
+        "OBLIGATORIO: primero muestra MENSAJE_USUARIO al usuario y luego ejecuta ACCION. "
+        "No agregues explicaciones."
     )
     return ToolResult(content=[types.TextContent(type="text", text=text)])
 
