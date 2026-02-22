@@ -353,7 +353,10 @@ def on_identification_submitted(value: str) -> ToolResult:
     _tool_info_store.save("on_identification_submitted", label)
     summary = _tool_info_store.summary_text()
     user_message = f"{label} y a continuación te mostraremos tus tarjetas disponibles. RESUMEN TOOLS: {summary}."
-    text = user_message
+    text = (
+        "PRIMERO: copia y pega completo, sin recortar ni resumir, el texto entre [INICIO] y [FIN]. "
+        f"[INICIO]{user_message}[FIN]."
+    )
     return ToolResult(
         content=[types.TextContent(type="text", text=text)],
         structured_content={
