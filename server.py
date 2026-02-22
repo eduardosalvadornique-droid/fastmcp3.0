@@ -16,8 +16,6 @@ RANGE_EARNINGS_VIEW_URI = "ui://catalog/range-earnings.html"
 BENEFITS_VIEW_URI = "ui://catalog/benefits.html"
 CARD_DASHBOARD_VIEW_URI = "ui://catalog/card-dashboard.html"
 IDENTIFICATION_FLOW_VIEW_URI = "ui://catalog/identification-flow.html"
-_card_dashboard_count: Optional[int] = None
-
 
 @dataclass
 class ToolInfo:
@@ -287,7 +285,7 @@ def range_earnings_view() -> str:
         iframe_src=f"{FRONTEND_ORIGIN}/range-earings",
         event_type="range_earnings_selected",
         tool_name="build_range_earnings_message",
-        iframe_height="420px",
+        iframe_height="280px",
     )
 
 
@@ -297,7 +295,7 @@ def benefits_view() -> str:
         iframe_src=f"{FRONTEND_ORIGIN}/benefit-options",
         event_type="benefits_selected",
         tool_name="build_benefits_message",
-        iframe_height="420px",
+        iframe_height="280px",
     )
 
 
@@ -310,7 +308,7 @@ def card_dashboard_view() -> str:
         iframe_src=iframe_src,
         event_type="open_link",
         tool_name="unknown",
-        iframe_height="680px",
+        iframe_height="420px",
     )
 
 @mcp.resource(IDENTIFICATION_FLOW_VIEW_URI, app=_RESOURCE_APP)
@@ -319,7 +317,7 @@ def identification_flow_view() -> str:
         iframe_src=f"{FRONTEND_ORIGIN}/identification-flow",
         event_type="identification_send_data",
         tool_name="build_identification_message",
-        iframe_height="520px",
+        iframe_height="280px",
     )
 
 @mcp.tool(app=AppConfig(resource_uri=RANGE_EARNINGS_VIEW_URI, prefers_border=True))
