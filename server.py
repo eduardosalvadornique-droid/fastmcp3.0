@@ -14,6 +14,7 @@ FRONTEND_ORIGIN = (
 RANGE_EARNINGS_VIEW_URI = "ui://catalog/range-earnings.html"
 BENEFITS_VIEW_URI = "ui://catalog/benefits.html"
 CARD_DASHBOARD_VIEW_URI = "ui://catalog/card-dashboard.html"
+CARD_DASHBOARD_WITH_COUNT_URI = "ui://catalog/card-dashboard/{count}"
 IDENTIFICATION_FLOW_VIEW_URI = "ui://catalog/identification-flow.html"
 _card_dashboard_count: Optional[int] = None
 
@@ -155,19 +156,9 @@ def open_card_dashboard_ui() -> ToolResult:
 
 
 @mcp.tool(
-    app=AppConfig(
-        resource_uri=CARD_DASHBOARD_VIEW_URI,
-        prefers_border=False,
-    )
+    app=AppConfig(resource_uri=CARD_DASHBOARD_WITH_COUNT_URI, prefers_border=False)
 )
-def open_card_dashboard_ui_with_count(count: Optional[int] = None) -> ToolResult:
-    """Abre la UI de tarjetas permitiendo definir el count opcional para el query param."""
-    global _card_dashboard_count
-    if count is not None and 1 <= count <= 5:
-        _card_dashboard_count = count
-    else:
-        _card_dashboard_count = None
-
+def open_card_dashboard_ui_with_count(count: int) -> ToolResult:
     return ToolResult(
         content=[types.TextContent(type="text", text="Abriendo Card Dashboard…")]
     )
@@ -240,14 +231,21 @@ def build_benefits_message(value: str) -> ToolResult:
         prefers_border=True,
     )
 )
+@mcp.tool(
+    app=AppConfig(
+        resource_uri=IDENTIFICATION_FLOW_VIEW_URI,
+        visibility=["app"],
+        prefers_border=True,
+    )
+)
 def build_identification_message(value: str) -> ToolResult:
     print(f"[tool] build_identification_message value={value!r}")
     count = random.randint(1, 5)
     text = (
         f"SOLO COMENTA: YA TE HEMOS EVALUADO CON TU DNI {value} y a continuación te mostraremos "
-        "tus tarjetas disponibles. NOTA: no coloques níngun mensaje adicional ni modifiques nada. "
-        "INSTRUCCIÓN: Ahora DEBES llamar inmediatamente a la tool `open_card_dashboard_ui_with_count` "
-        "con el argumento count={count}. No escribas nada al usuario antes de hacerlo."
+        f"tus tarjetas disponibles. NOTA: no coloques níngun mensaje adicional ni modifiques nada. "
+        f"INSTRUCCIÓN: Ahora DEBES llamar inmediatamente a la tool `open_card_dashboard_ui_with_count` "
+        f"con el argumento count={count}. No escribas nada al usuario antes de hacerlo."
     )
     return ToolResult(content=[types.TextContent(type="text", text=text)])
 
@@ -284,6 +282,15 @@ def card_dashboard_view() -> str:
         tool_name="unknown",
     )
 
+
+@mcp.resource(CARD_DASHBOARD_WITH_COUNT_URI, app=_RESOURCE_APP)
+def card_dashboard_view_with_count(count: int) -> str:
+    iframe_src = f"{FRONTEND_ORIGIN}/card-dashboard?count={count}"
+    return _wrapper_html(
+        iframe_src=iframe_src,
+        event_type="open_link",
+        tool_name="unknown",
+    )
 
 @mcp.resource(IDENTIFICATION_FLOW_VIEW_URI, app=_RESOURCE_APP)
 def identification_flow_view() -> str:
