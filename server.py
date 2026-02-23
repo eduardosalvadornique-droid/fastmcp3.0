@@ -1,5 +1,6 @@
 from fastmcp import FastMCP
 from fastmcp.server.apps import AppConfig, ResourceCSP, ResourcePermissions
+from fastmcp.server.context import Context
 from fastmcp.tools import ToolResult
 from mcp import types
 from dataclasses import dataclass
@@ -27,7 +28,6 @@ class ToolInfo:
 class ToolInfoStore:
     def __init__(self) -> None:
         self._data: dict[str, ToolInfo] = {}
-        self._card_count: Optional[int] = None
 
     def save(self, tool_name: str, label: str) -> ToolInfo:
         tool_info = ToolInfo(
@@ -37,33 +37,19 @@ class ToolInfoStore:
         self._data[tool_name] = tool_info
         return tool_info
 
-    def summary_text(self) -> str:
+    def summary_text(self, card_count: Optional[int] = None) -> str:
         tools_summary = " | ".join(
             f"{tool_name}: label={tool_info.label}; mensaje_fijo={tool_info.mensaje_fijo}"
             for tool_name, tool_info in self._data.items()
         )
         card_count_text = (
-            str(self._card_count)
-            if isinstance(self._card_count, int) and self._card_count > 0
+            str(card_count)
+            if isinstance(card_count, int) and card_count > 0
             else "no_definido"
         )
         if tools_summary:
             return f"{tools_summary} | card_count={card_count_text}"
         return f"card_count={card_count_text}"
-
-    def set_card_count(self, count: int) -> None:
-        self._card_count = count
-
-    def ensure_card_count(self, count: int) -> int:
-        if not isinstance(self._card_count, int) or self._card_count <= 0:
-            self._card_count = count
-        return self._card_count
-
-    def get_card_count(self) -> Optional[int]:
-        return self._card_count
-
-    def clear_card_count(self) -> None:
-        self._card_count = None
 
 
 _tool_info_store = ToolInfoStore()
@@ -190,11 +176,11 @@ _RESOURCE_APP = AppConfig(
         prefers_border=True,
     )
 )
-def open_range_earnings_ui() -> ToolResult:
+async def open_range_earnings_ui(ctx: Context) -> ToolResult:
     """Abre la UI para seleccionar un rango salarial (earnings).
     Usar cuando el usuario quiera iniciar solicitud de tarjeta.
     """
-    _tool_info_store.clear_card_count()
+    await ctx.set_state("card_count", None)
     return ToolResult(
         content=[
             types.TextContent(type="text", text="Abriendo UI de rangos salariales…")
@@ -208,11 +194,11 @@ def open_range_earnings_ui() -> ToolResult:
         prefers_border=True,
     )
 )
-def start_card_application_flow() -> ToolResult:
+async def start_card_application_flow(ctx: Context) -> ToolResult:
     """Usar cuando la intención sea obtener/conseguir/aplicar a una tarjeta.
     Esta tool SIEMPRE inicia el flujo en rango salarial.
     """
-    _tool_info_store.clear_card_count()
+    await ctx.set_state("card_count", None)
     return ToolResult(
         content=[
             types.TextContent(
@@ -305,7 +291,7 @@ def open_identification_flow_ui() -> ToolResult:
         prefers_border=True,
     )
 )
-def on_range_selected(value: str) -> ToolResult:
+async def on_range_selected(value: str, ctx: Context) -> ToolResult:
     print(f"[tool] on_range_selected value={value!r}")
     messages = {
         "lt_1200": "El usuario eligió menos de S/ 1200.",
@@ -315,7 +301,8 @@ def on_range_selected(value: str) -> ToolResult:
     }
     label = messages.get(value, f"Recibí : {value}")
     _tool_info_store.save("on_range_selected", label)
-    selected_count = _tool_info_store.ensure_card_count(random.randint(1, 5))
+    selected_count = random.randint(1, 5)
+    await ctx.set_state("card_count", selected_count)
     print(f"[flow] set/keep card_count={selected_count}")
     
     text = (
@@ -356,11 +343,12 @@ def on_benefit_selected(value: str) -> ToolResult:
         prefers_border=False,
     )
 )
-def on_identification_submitted(value: str) -> ToolResult:
+async def on_identification_submitted(value: str, ctx: Context) -> ToolResult:
     print(f"[tool] on_identification_submitted value={value!r}")
     label = f"Te hemos evaluado con tu DNI {value}"
     _tool_info_store.save("on_identification_submitted", label)
-    summary = _tool_info_store.summary_text()
+    count = await ctx.get_state("card_count")
+    summary = _tool_info_store.summary_text(card_count=count if isinstance(count, int) else None)
     user_message = f"{label} y a continuación te mostraremos tus tarjetas disponibles. RESUMEN TOOLS: {summary}."
     text = (
         "PRIMERO: copia y pega completo, sin recortar ni resumir, el texto entre [INICIO] y [FIN]. "
@@ -392,9 +380,9 @@ def benefits_view() -> str:
 
 
 @mcp.resource(CARD_DASHBOARD_VIEW_URI, app=_RESOURCE_APP)
-def card_dashboard_view() -> str:
-    count = _tool_info_store.get_card_count()
-    if isinstance(count, int) and 1 <= count <= 5:
+async def card_dashboard_view(ctx: Context) -> str:
+    count = await ctx.get_state("card_count")
+    if isinstance(count, int) and count > 0:
         iframe_src = f"{FRONTEND_ORIGIN}/card-dashboard?count={count}"
     else:
         iframe_src = f"{FRONTEND_ORIGIN}/card-dashboard"
