@@ -143,6 +143,22 @@ def _wrapper_html(
 
         if (ev.source !== iframe.contentWindow) return;
 
+        if (data.type === "dashboard_request_count" && ev.source === iframe.contentWindow) {{
+          const toolResult = await app.callServerTool({{
+            name: "get_dashboard_count",
+            arguments: {{}}
+          }});
+
+          const structured = toolResult?.structuredContent ?? toolResult?.structured_content ?? null;
+          const count = structured?.count ?? null;
+
+          iframe.contentWindow?.postMessage(
+            {{ type: "dashboard_count_response", value: count }},
+            '*'
+          );
+          return;
+        }}
+
         if (data.type !== "{event_type}") return;
 
         const value = data.value;
