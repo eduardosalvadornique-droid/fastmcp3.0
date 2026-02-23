@@ -54,6 +54,11 @@ class ToolInfoStore:
     def set_card_count(self, count: int) -> None:
         self._card_count = count
 
+    def ensure_card_count(self, count: int) -> int:
+        if not isinstance(self._card_count, int) or self._card_count <= 0:
+            self._card_count = count
+        return self._card_count
+
     def get_card_count(self) -> Optional[int]:
         return self._card_count
 
@@ -310,7 +315,7 @@ def on_range_selected(value: str) -> ToolResult:
     }
     label = messages.get(value, f"Recibí : {value}")
     _tool_info_store.save("on_range_selected", label)
-    _tool_info_store.set_card_count(random.randint(1, 5))
+    _tool_info_store.ensure_card_count(random.randint(1, 5))
     text = (
         f"PRIMERO: muestra este mensaje al usuario: {label}. "
         "DESPUÉS: llama inmediatamente a la tool `open_benefits_ui`. "
