@@ -280,6 +280,7 @@ def open_card_dashboard_ui_readonly() -> ToolResult:
     Ejemplos: "ver tarjetas", "mostrar tarjetas", "qué tarjetas hay".
     Esta vista oculta el botón de aplicar.
     """
+    _tool_info_store.clear_card_count();
     return ToolResult(
         content=[types.TextContent(type="text", text="Abriendo Card Dashboard (solo vista)…")]
     )
