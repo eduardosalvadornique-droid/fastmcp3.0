@@ -38,10 +38,18 @@ class ToolInfoStore:
         return tool_info
 
     def summary_text(self) -> str:
-        return " | ".join(
+        tools_summary = " | ".join(
             f"{tool_name}: label={tool_info.label}; mensaje_fijo={tool_info.mensaje_fijo}"
             for tool_name, tool_info in self._data.items()
         )
+        card_count_text = (
+            str(self._card_count)
+            if isinstance(self._card_count, int) and self._card_count > 0
+            else "no_definido"
+        )
+        if tools_summary:
+            return f"{tools_summary} | card_count={card_count_text}"
+        return f"card_count={card_count_text}"
 
     def set_card_count(self, count: int) -> None:
         self._card_count = count
