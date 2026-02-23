@@ -143,7 +143,7 @@ def _wrapper_html(
 
         if (ev.source !== iframe.contentWindow) return;
 
-        if (data.type === "dashboard_request_count" && ev.source === iframe.contentWindow) {{
+        if (data.type === "dashboard_count_request" && ev.source === iframe.contentWindow) {{
           const toolResult = await app.callServerTool({{
             name: "get_dashboard_count",
             arguments: {{}}
