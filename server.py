@@ -315,7 +315,9 @@ def on_range_selected(value: str) -> ToolResult:
     }
     label = messages.get(value, f"Recibí : {value}")
     _tool_info_store.save("on_range_selected", label)
-    _tool_info_store.ensure_card_count(random.randint(1, 5))
+    selected_count = _tool_info_store.ensure_card_count(random.randint(1, 5))
+    print(f"[flow] set/keep card_count={selected_count}")
+    
     text = (
         f"PRIMERO: muestra este mensaje al usuario: {label}. "
         "DESPUÉS: llama inmediatamente a la tool `open_benefits_ui`. "
@@ -396,6 +398,8 @@ def card_dashboard_view() -> str:
         iframe_src = f"{FRONTEND_ORIGIN}/card-dashboard?count={count}"
     else:
         iframe_src = f"{FRONTEND_ORIGIN}/card-dashboard"
+
+    print(f"[resource] card_dashboard_view count={count} iframe_src={iframe_src}")
 
     return _wrapper_html(
         iframe_src=iframe_src,
